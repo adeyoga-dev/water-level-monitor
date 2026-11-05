@@ -47,12 +47,11 @@ pageStart('Device history', 'dashboard');
                         </div>
                         <div class="form-group col-12 col-md-4">
                             <label class="small" for="history-group">Group by</label>
-                            <select class="form-control form-control-sm" id="history-group" name="group_by" aria-describedby="history-group-help">
+                            <select class="form-control form-control-sm" id="history-group" name="group_by">
                                 <?php foreach (['auto' => 'Auto', 'minute' => 'Minute', 'hour' => 'Hour', 'day' => 'Day', 'month' => 'Month', 'year' => 'Year'] as $value => $label): ?>
                                     <option value="<?= $value ?>" <?= $history['filters']['group_by'] === $value ? 'selected' : '' ?>><?= $label ?></option>
                                 <?php endforeach; ?>
                             </select>
-                            <small class="form-text text-muted" id="history-group-help">Minute: select a single date.</small>
                         </div>
                     </div>
                     <button class="btn btn-sm btn-primary" id="history-apply" type="submit">Apply filters</button>
@@ -60,7 +59,7 @@ pageStart('Device history', 'dashboard');
                     <small class="d-block text-muted mt-2" id="history-filter-state" role="status" aria-live="polite"></small>
                 </form>
                 <p class="small text-muted" id="history-status" role="status" aria-live="polite">Loading water level trend…</p>
-                <div class="alert alert-danger" id="history-error" role="alert" hidden></div>
+                <div class="alert alert-danger" id="history-error" role="alert" tabindex="-1" hidden></div>
                 <p class="text-muted py-4 text-center" id="history-empty" hidden>No sensor readings in this date range.</p>
                 <div id="history-chart-area" hidden>
                     <canvas id="history-chart" role="img" aria-label="Water level in centimetres over time" aria-describedby="history-summary">Water level trend. A text summary is provided below the chart.</canvas>

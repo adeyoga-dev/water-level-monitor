@@ -193,6 +193,7 @@
     controller?.abort();
     busy = false;
     form.elements.to.setCustomValidity("");
+    error.hidden = true;
     status.textContent = dirty() ? "Showing the last applied date range" : "Refreshes every 5 seconds";
     controls();
     schedule();
@@ -218,7 +219,15 @@
     if (busy) return;
     const filters = readFilters();
     form.elements.to.setCustomValidity(filters.from > filters.to ? "To date must be on or after From date." : "");
-    if (form.reportValidity()) loadHistory(filters);
+    if (!form.reportValidity()) return;
+    if (filters.group_by === "minute" && filters.from !== filters.to) {
+      error.textContent = "Minute grouping requires a single date. Set From date and To date to the same date.";
+      error.hidden = false;
+      status.textContent = "Invalid date filters";
+      error.focus();
+      return;
+    }
+    loadHistory(filters);
   });
   reset.addEventListener("click", () => {
     if (busy || (dirty() && !window.confirm("Discard unapplied filters and show today?"))) return;
