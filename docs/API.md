@@ -125,7 +125,7 @@ Halaman `/device-history.php?device_id=ESP32-001` dibuka melalui tombol **View d
 
 Tanpa filter, respons juga berisi `filters: null`, `aggregation: raw`, `period: null`, dan `reading_count` untuk jumlah log yang dikirim. Warna titik mengikuti klasifikasi historis, sehingga perubahan rentang saat ini tidak mengubah label log lama. Sumbu waktu memakai timestamp numerik. Mode raw satu timestamp diberi ruang 30 detik di masing-masing sisi sumbu.
 
-Halaman detail secara default memakai hari ini berdasarkan `APP_TIMEZONE`. Filter **From date**, **To date**, dan **Group by** diterapkan lewat **Apply filters**. URL halaman menyimpan filter yang berhasil diterapkan. Contoh endpoint:
+Halaman detail secara default memakai 30 hari terakhir termasuk hari ini berdasarkan `APP_TIMEZONE` (From date = hari ini dikurangi 29 hari, To date = hari ini). Input tanggal dan grafik langsung memakai periode ini dengan pengelompokan harian otomatis. Filter **From date**, **To date**, dan **Group by** diterapkan lewat **Apply filters**. URL halaman menyimpan filter yang berhasil diterapkan. Contoh endpoint:
 
 `GET /api/device-history.php?device_id=ESP32-001&from=2026-01-01&to=2026-12-31&group_by=auto`
 

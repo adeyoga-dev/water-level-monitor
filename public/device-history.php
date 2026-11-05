@@ -2,10 +2,12 @@
 require dirname(__DIR__) . '/app/bootstrap.php';
 require dirname(__DIR__) . '/app/admin.php';
 require dirname(__DIR__) . '/app/layout.php';
-$today = (new DateTimeImmutable('today', new DateTimeZone(config('APP_TIMEZONE', 'Asia/Jakarta'))))->format('Y-m-d');
+$localToday = new DateTimeImmutable('today', new DateTimeZone(config('APP_TIMEZONE', 'Asia/Jakarta')));
+$today = $localToday->format('Y-m-d');
+$defaultFrom = $localToday->modify('-29 days')->format('Y-m-d');
 $filters = $_GET;
 if (!array_key_exists('from', $filters) && !array_key_exists('to', $filters)) {
-    $filters += ['from' => $today, 'to' => $today];
+    $filters += ['from' => $defaultFrom, 'to' => $today];
 }
 try {
     $history = deviceHistory($_GET['device_id'] ?? null, $filters);

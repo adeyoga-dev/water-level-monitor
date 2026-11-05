@@ -57,6 +57,7 @@ Pemeriksaan memakai data buatan tanpa koneksi database. Integrasi database dan p
 
 ## Filter periode grafik — 6 November 2026
 
+- Default ketika membuka detail dari dashboard adalah 30 hari terakhir termasuk hari ini. Pemeriksaan browser desktop/ponsel memastikan kedua input tanggal sesuai periode lokal tersebut, grafik memiliki 30 interval harian, serta pilihan periode eksplisit dan tombol Today tetap bekerja.
 - Integrasi logika/MySQL/HTTP lulus **89 pemeriksaan**. Tambahan mencakup tanggal awal–akhir inklusif dalam zona aplikasi, pengelompokan jam/hari/bulan/tahun, rata-rata berbobot pembacaan, minimum/maksimum, seluruh data melampaui batas raw 500 log, celah bernilai null, tahun kabisat, jam DST berulang, pemisahan perangkat, validasi tanggal/interval, dan GET tanpa efek tulis.
 - Chrome headless lokal lulus **20 pemeriksaan** untuk grafik offline dan layout desktop/ponsel, filter dan URL periode, label sumbu horizontal yang dibatasi sesuai lebar layar, ketiga seri agregat, kegagalan jaringan/timeout, draft yang bertahan saat gagal, pembatalan request usang, polling dijeda selama draft, konfirmasi Today yang dibatalkan/diterima, validasi kepadatan titik, serta pemulihan library lokal.
 - Pengujian memakai server PHP aplikasi sebenarnya, Chart.js lokal tanpa perubahan, dan data buatan dalam instance MariaDB sementara dengan identitas data directory yang diverifikasi. Database aplikasi serta perangkat fisik tidak diuji. Akses HTTPS diblokir selama browser checks.
