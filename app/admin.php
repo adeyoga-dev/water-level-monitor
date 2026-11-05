@@ -89,9 +89,42 @@ function deviceList(): array
     $grouped = [];
     foreach ($ranges as $range) $grouped[$range['device_id']][] = $range;
     foreach ($devices as &$device) {
+        $device['alert_ranges'] = $grouped[$device['id']] ?? [];
         $device['alert_status'] = $device['water_level'] === null ? null : classify((float)$device['water_level'], $grouped[$device['id']] ?? []);
         $device['alarm_active'] = $device['water_level'] !== null && alarmOn((float)$device['water_level'], (float)$device['alarm_threshold'], (bool)$device['buzzer_status']);
         $device['last_seen_display'] = displayTime($device['last_seen_at']);
     }
     return $devices;
+}
+
+/** @return array{device: array, points: list<array{x: int, y: float, alarm_status: ?int}>, timezone: string, limit: int} */
+function deviceHistory(mixed $identifier): array
+{
+    if (!is_string($identifier) || !preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $identifier)) {
+        fail('Invalid device_id.');
+    }
+    $device = query('SELECT * FROM devices WHERE device_id=?', [$identifier])->fetch();
+    if (!$device) {
+        throw new OutOfBoundsException('Device is not registered.');
+    }
+    $device['alert_ranges'] = query('SELECT * FROM device_alert_ranges WHERE device_id=? ORDER BY alarm_status', [$device['id']])->fetchAll();
+    $device['alert_status'] = $device['water_level'] === null ? null : classify((float) $device['water_level'], $device['alert_ranges']);
+    $device['last_seen_display'] = displayTime($device['last_seen_at']);
+    // History requests only read data; evaluate heartbeat expiry without updating devices.
+    if ($device['device_status']) {
+        $lastSeen = $device['last_seen_at'] === null ? null : new DateTimeImmutable($device['last_seen_at'], new DateTimeZone('UTC'));
+        if (!$lastSeen || time() - $lastSeen->getTimestamp() > max(3 * (int) $device['update_interval'], 30)) {
+            $device['device_status'] = 0;
+        }
+    }
+    $logs = query('SELECT water_level,alarm_status,created_at FROM sensor_logs WHERE device_id=? ORDER BY created_at DESC,id DESC LIMIT 500', [$identifier])->fetchAll();
+    $points = [];
+    foreach (array_reverse($logs) as $log) {
+        $points[] = [
+            'x' => (new DateTimeImmutable($log['created_at'], new DateTimeZone('UTC')))->getTimestamp() * 1000,
+            'y' => (float) $log['water_level'],
+            'alarm_status' => $log['alarm_status'] === null ? null : (int) $log['alarm_status'],
+        ];
+    }
+    return ['device' => $device, 'points' => $points, 'timezone' => config('APP_TIMEZONE', 'Asia/Jakarta'), 'limit' => 500];
 }

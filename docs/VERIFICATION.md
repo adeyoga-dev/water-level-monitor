@@ -32,3 +32,25 @@ Seluruh halaman memakai Bootstrap 4.6.2 lokal dari `public/assets/vendor/bootstr
 - Browser bawaan gagal tersambung dengan `codex/sandbox-state-meta: missing field sandboxPolicy`; pemeriksaan menggunakan Chrome lokal sebagai fallback.
 
 Fixture merender template aplikasi dengan data buatan dan tidak memuat `.env`, menjalankan query database, atau memproses publikasi firmware. Pengujian integrasi MySQL/HTTP terhadap aplikasi sebenarnya tidak diulang pada konversi tampilan ini. Hasil ini tidak membuktikan komunikasi atau OTA pada ESP32 fisik. Tidak ada migrasi database untuk perubahan ini.
+
+## Panel muka air — 5 November 2026
+
+Bagian `Your devices` pada dashboard diganti panel SVG dengan pembacaan cm, status Online/Offline, waktu terakhir, dan tiga rentang Siaga dari pengaturan perangkat. Tombol detail/riwayat membuka halaman detail dengan grafik Chart.js sebagaimana dijelaskan di bagian berikutnya. Informasi `Kualitas Data: SIMULATOR` tidak ditampilkan. Komponen halaman tetap memakai Bootstrap 4.6.2 tanpa stylesheet tambahan. Halaman Devices tetap menggunakan tabel.
+
+- Pemeriksaan sintaks PHP dan 9 pemeriksaan logika tanpa database lulus.
+- Verifikasi awal panel menjalankan 18 pemeriksaan fixture di Chrome headless lokal: desktop/ponsel, label Siaga, skala/grafik, navigasi riwayat sebelum dijadikan tombol dummy, data kosong, Offline, pembacaan negatif, celah rentang, dan rentang sempit.
+- Verifikasi sebelumnya saat tombol masih dummy mencakup 4 pemeriksaan fixture desktop/ponsel. Hasil historis tersedia di `temp/water-level-panel/button-verification.json`; tombol kini mengarah ke halaman detail.
+- Grid panel menampilkan seluruh perangkat dengan dua kolom mulai lebar viewport 992 px dan satu kolom di bawahnya; satu perangkat tetap memakai lebar penuh. Sebanyak 17 pemeriksaan fixture lulus untuk 1, 2, 4, dan 5 perangkat pada viewport 1440, 1024, 768, serta 390 px, termasuk ID SVG unik dan kelengkapan panel setelah polling. Hasil tersedia di `temp/water-level-panel/grid-verification.json`.
+- Kartu ringkasan dirapatkan menjadi layout horizontal dengan ikon SVG lokal di kiri serta judul/angka di kanan. Lima pemeriksaan fixture lulus pada viewport 1440, 1024, 768, dan 390 px serta setelah polling: tinggi kartu maksimal 100 px, ikon dekoratif, nilai tetap benar, dan tanpa overflow/CSS tambahan. Hasil dan screenshot berada di `temp/water-level-panel/summary-verification.json` dan `temp/water-level-panel/screenshots/*-summary.png`.
+- Polling diuji saat pembacaan berubah, koneksi gagal, timeout 15 detik, dan pulih kembali; nilai terakhir dipertahankan pada kegagalan.
+- Screenshot dan hasil pemeriksaan tersedia di `temp/water-level-panel/`.
+
+Pemeriksaan memakai data buatan tanpa koneksi database. Integrasi database dan perangkat fisik tidak dijalankan. Skala grafik bersifat otomatis, tidak menunjukkan kapasitas fisik. Tidak ada perubahan schema atau kontrak telemetry ESP32.
+
+## Grafik riwayat Chart.js — 5 November 2026
+
+- Integrasi MySQL/HTTP lulus **68 pemeriksaan**, mencakup seluruh pengujian sebelumnya serta endpoint/page riwayat, timestamp UTC dalam milidetik, urutan waktu/ID, batas 500 pembacaan, kondisi kosong, metode/identifier invalid, tidak adanya efek tulis pada GET/penolakan, pemisahan log antarperangkat, dan klasifikasi historis yang tidak berubah saat rentang diedit.
+- Pengujian memakai MariaDB 10.4.32 sementara dengan data directory baru di `temp/history-chart/`, port loopback acak, serta database acak berawalan `water_level_test_`. Identitas data directory diverifikasi sebelum pengujian. Semua konfigurasi koneksi PHP dan server HTTP diarahkan ke instance ini melalui environment proses; database aplikasi tidak diakses.
+- Chrome headless lokal lulus **12 pemeriksaan** untuk tautan dashboard melalui keyboard, render Chart.js 4.6.1 pada desktop/ponsel, pergantian perangkat, satu titik, riwayat kosong, penolakan refresh ganda, kegagalan jaringan, timeout, kegagalan library lokal, dan pemulihan.
+- Chart.js disajikan langsung dari `public/assets/vendor/chartjs-4.6.1/chart.umd.min.js` tanpa intersepsi byte library. Akses HTTPS diblokir selama pengujian untuk memverifikasi penggunaan offline. Kegagalan pemuatan library lokal juga diuji. Screenshot, hasil browser, dan output integrasi tersedia di `temp/history-chart/`.
+- Instance database dan profil Chrome sementara dihentikan/dibersihkan setelah pengujian. Tidak ada migrasi aplikasi yang dijalankan. Perangkat ESP32 fisik tidak diuji.

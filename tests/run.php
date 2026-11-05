@@ -48,7 +48,7 @@ try {
     fclose($pipes[0]);
     $connected=false;
     for($i=0;$i<40;$i++){ $s=@fsockopen('127.0.0.1',18765,$errno,$errstr,.1);if($s){fclose($s);$connected=true;break;}usleep(100000); }
-    check($connected,'HTTP server started');
+    check($connected && proc_get_status($server)['running'],'HTTP server started');
     function request(string $path,string $method='GET',mixed $body=null,bool $json=true): array {
         $ch=curl_init('http://127.0.0.1:18765'.$path);
         curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CUSTOMREQUEST=>$method,CURLOPT_TIMEOUT=>10,CURLOPT_COOKIEFILE=>dirname(__DIR__).'/tests/.tmp-cookie',CURLOPT_COOKIEJAR=>dirname(__DIR__).'/tests/.tmp-cookie']);
@@ -118,6 +118,37 @@ try {
     for($i=0;$i<26;$i++) query('INSERT INTO sensor_logs(device_id,water_level,alarm_status,created_at) VALUES(?,?,?,?)',['ESP32-TEST',5,0,'2026-11-04 00:00:00']);
     $filtered=request('/logs.php?device_id=ESP32-TEST&alarm_status=0&from=2026-11-04&to=2026-11-04&page=2')[1];
     check(str_contains($filtered,'26 logs') && str_contains($filtered,'Page 2 of 2'),'combined log filters and pagination');
+    $beforeHistory=query('SELECT * FROM devices WHERE id=?',[$id])->fetch();
+    $beforeHistoryCount=(int)query('SELECT COUNT(*) FROM sensor_logs')->fetchColumn();
+    [$code,,$history]=request('/api/device-history.php?device_id=ESP32-TEST');
+    check($code===200 && $history['status']==='success' && $history['device']['device_id']==='ESP32-TEST' && $history['timezone']==='Asia/Jakarta','public device history endpoint returns scoped data and timezone');
+    check(count($history['points'])===(int)query('SELECT COUNT(*) FROM sensor_logs WHERE device_id=?',['ESP32-TEST'])->fetchColumn(),'history returns actual recorded readings');
+    $times=array_column($history['points'],'x');$sortedTimes=$times;sort($sortedTimes);
+    check($times===$sortedTimes && is_int($times[0]) && $times[0]>1000000000000,'history points use ascending UTC epoch milliseconds');
+    check(query('SELECT * FROM devices WHERE id=?',[$id])->fetch()===$beforeHistory && (int)query('SELECT COUNT(*) FROM sensor_logs')->fetchColumn()===$beforeHistoryCount,'history GET does not update devices or insert readings');
+    check(request('/device-history.php?device_id=ESP32-TEST')[0]===200,'device detail page renders');
+    $detailHtml=request('/device-history.php?device_id=ESP32-TEST')[1];
+    check(str_contains($detailHtml,'/assets/vendor/chartjs-4.6.1/chart.umd.min.js') && !str_contains($detailHtml,'cdn.jsdelivr.net') && str_contains($detailHtml,'id="history-data"') && str_contains($detailHtml,'id="history-chart"'),'detail page includes local Chart.js and history chart without CDN');
+    check(request('/api/device-history.php?device_id=UNKNOWN')[0]===404 && request('/device-history.php?device_id=UNKNOWN')[0]===404,'unknown history device returns controlled 404');
+    check(request('/api/device-history.php?device_id=bad%27OR%201%3D1')[0]===422 && request('/api/device-history.php?device_id[]=ESP32-TEST')[0]===422 && request('/api/device-history.php')[0]===422,'invalid history identifiers rejected');
+    check(request('/api/device-history.php?device_id=ESP32-TEST','POST')[0]===405,'history endpoint rejects writes');
+    check(request('/device-history.php?device_id=%3Cscript%3E')[0]===404,'invalid history page identifier returns safe 404');
+    check((int)query('SELECT COUNT(*) FROM sensor_logs')->fetchColumn()===$beforeHistoryCount,'denied and invalid history requests have no write side effects');
+    [$code,,$emptyHistory]=request('/api/device-history.php?device_id=ESP32-NEW');
+    check($code===200 && $emptyHistory['points']===[],'device without historical readings returns an empty series');
+    query('UPDATE device_alert_ranges SET max_level=4 WHERE device_id=? AND alarm_status=0',[$id]);
+    $changedHistory=request('/api/device-history.php?device_id=ESP32-TEST')[2];
+    check(count(array_filter($changedHistory['points'],fn($point)=>$point['y']===5 && $point['alarm_status']===0))===26,'historical classifications remain unchanged when current ranges change');
+    query('UPDATE device_alert_ranges SET max_level=20 WHERE device_id=? AND alarm_status=0',[$id]);
+    db()->beginTransaction();
+    for($i=0;$i<520;$i++) {
+        query('INSERT INTO sensor_logs(device_id,water_level,alarm_status,created_at) VALUES(?,?,?,?)',['ESP32-TEST',1000+$i,2,'2099-01-01 00:00:00']);
+    }
+    query('INSERT INTO sensor_logs(device_id,water_level,alarm_status,created_at) VALUES(?,?,?,?)',['ESP32-NEW',99999,2,'2099-01-01 00:00:00']);
+    db()->commit();
+    $limitedHistory=request('/api/device-history.php?device_id=ESP32-TEST')[2];
+    check(count($limitedHistory['points'])===500 && $limitedHistory['limit']===500 && $limitedHistory['points'][0]['y']===1020 && $limitedHistory['points'][499]['y']===1519,'history is bounded to the latest 500 readings with stable ordering for equal timestamps');
+    check(!in_array(99999,array_column($limitedHistory['points'],'y'),true),'tampering with history device selection cannot mix another device readings');
     echo "$checks checks passed.\n";
 } catch(Throwable $e) {
     fwrite(STDERR,(string)$e."\n");$failed=true;

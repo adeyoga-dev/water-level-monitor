@@ -1,9 +1,9 @@
 async function refreshDashboard() {
   const status = document.querySelector("#refresh-status");
-  const table = document.querySelector("#device-table");
+  const panels = document.querySelector("#water-level-panels");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
-  table.setAttribute("aria-busy", "true");
+  panels.setAttribute("aria-busy", "true");
   status.textContent = "Updating device readings…";
   try {
     const response = await fetch("/api/dashboard.php", {
@@ -13,7 +13,7 @@ async function refreshDashboard() {
     if (!response.ok) throw new Error("HTTP " + response.status);
     const data = await response.json();
     if (data.status !== "success") throw new Error("Invalid response");
-    table.innerHTML = data.html;
+    panels.innerHTML = data.html;
     document.querySelector("#stat-total").textContent = data.total;
     document.querySelector("#stat-online").textContent = data.online;
     document.querySelector("#stat-offline").textContent =
@@ -24,7 +24,7 @@ async function refreshDashboard() {
     status.textContent = "Connection lost · retrying";
   } finally {
     clearTimeout(timeout);
-    table.setAttribute("aria-busy", "false");
+    panels.setAttribute("aria-busy", "false");
     setTimeout(refreshDashboard, 5000);
   }
 }

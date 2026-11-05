@@ -106,4 +106,27 @@ Saat jaringan gagal, contoh firmware mempertahankan konfigurasi terakhir yang va
 
 ## Endpoint dashboard
 
-`GET /api/dashboard.php` memperbarui tabel browser setiap 5 detik. Respons berisi HTML tabel yang sudah di-escape, total perangkat, jumlah Online, dan jumlah log. Endpoint ini digunakan frontend, bukan kontrak telemetry ESP32.
+`GET /api/dashboard.php` memperbarui panel muka air setiap 5 detik setelah request sebelumnya selesai. Respons berisi HTML panel yang sudah di-escape, total perangkat, jumlah Online, dan jumlah log. Struktur field JSON tetap sama; field `html` kini merender indikator air SVG, rentang Siaga, status, dan pembacaan terakhir. Endpoint ini digunakan frontend, bukan kontrak telemetry ESP32.
+
+Grafik memakai rentang perangkat yang sedang berlaku dengan label Siaga 1, Siaga 2, dan Siaga 3. Batas bawah inklusif, batas atas eksklusif; rentang terbuka tetap didukung. Skala sumbu ditentukan otomatis dari pembacaan dan batas rentang, bukan tinggi maksimum fisik. Ketika perangkat Offline, pembacaan terakhir tetap ditampilkan dengan keterangan Offline. Tanpa pembacaan, panel menampilkan `No readings yet` tanpa mengisi grafik air. Jika request gagal atau dibatalkan setelah 15 detik, browser mempertahankan panel terakhir, mengakhiri status loading, dan mencoba kembali.
+
+## Detail perangkat dan grafik riwayat
+
+Halaman `/device-history.php?device_id=ESP32-001` dibuka melalui tombol **View details & history**. Desktop menampilkan indikator air dan grafik berdampingan; layar kecil menumpuk keduanya. Grafik memakai Chart.js 4.6.1 lokal di `/assets/vendor/chartjs-4.6.1/chart.umd.min.js`, tanpa adapter tanggal atau plugin tambahan. File distribusi diunduh dari `https://cdn.jsdelivr.net/npm/chart.js@4.6.1/dist/chart.umd.min.js`, disimpan tanpa modifikasi, dan disertai `LICENSE.md`. Browser tidak mengakses CDN sehingga grafik dapat digunakan tanpa internet.
+
+`GET /api/device-history.php?device_id=ESP32-001` mengembalikan:
+
+- `status`: `success`.
+- `device`: informasi perangkat, rentang Siaga saat ini, dan waktu/status komunikasi terakhir.
+- `points`: maksimal 500 log terbaru untuk perangkat tersebut, diurutkan menaik berdasarkan waktu dan ID log. Setiap titik berisi `x` (Unix timestamp UTC dalam milidetik), `y` (ketinggian cm), serta `alarm_status` historis (`0`, `1`, `2`, atau `null`).
+- `timezone`: zona waktu tampilan dari `APP_TIMEZONE`.
+- `limit`: `500`.
+- `html`: indikator perangkat yang diperbarui dengan escaping output.
+
+Waktu grafik dan tooltip mengikuti zona waktu aplikasi. Garis menghubungkan pembacaan yang tercatat; warna titik mengikuti klasifikasi historis, sehingga perubahan rentang saat ini tidak mengubah label log lama. Sumbu waktu menggunakan skala numerik untuk mempertahankan jarak waktu sebenarnya, termasuk jika beberapa log mempunyai timestamp yang sama. Satu timestamp diberi ruang 30 detik di masing-masing sisi sumbu.
+
+Endpoint hanya membaca database dan tidak menambah log atau memperbarui status perangkat. Perangkat tak terdaftar menghasilkan `404`, identifier tidak valid menghasilkan `422`, dan metode selain GET menghasilkan `405`. Halaman detail mengembalikan `404` untuk identifier tidak valid atau perangkat tidak ditemukan. Akses tetap publik sesuai model akses aplikasi saat ini.
+
+Halaman menyediakan Refresh manual dan polling berurutan setiap 5 detik setelah request selesai. Permintaan ganda dicegah, request dibatalkan setelah 15 detik, dan grafik terakhir dipertahankan saat gagal. Riwayat kosong menampilkan pesan tanpa data simulasi. Library lokal yang gagal dimuat menampilkan error dan tombol **Reload page**. Tidak ada filter periode atau pengambilan seluruh log; daftar riwayat lengkap tetap tersedia pada halaman Sensor logs.
+
+Terakhir diperbarui: 5 November 2026. Departemen peminta, owner/PIC, dan maintainer: Not confirmed. Pengguna: pemantau perangkat. Tidak ada perubahan schema, konfigurasi database, atau kontrak telemetry ESP32.

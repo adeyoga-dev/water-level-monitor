@@ -6,3 +6,4 @@ storage/logs/*
 tests/.tmp*
 AGENTS.md
 RTK.md
+temp/

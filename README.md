@@ -15,7 +15,7 @@ Proyek PHP native 8.2+ dengan MySQL/MariaDB, dashboard admin, API ESP32, riwayat
 4. Buka `http://localhost:8000`, tambahkan perangkat, lalu atur threshold dan rentang Siaga.
 5. Isi `APP_URL` dengan alamat LAN yang dapat dijangkau ESP32, misalnya `http://192.168.1.10:8000`, dan sesuaikan konfigurasi sketch.
 
-Tidak memerlukan Composer, npm, Laravel, atau URL rewrite. Seluruh halaman memakai komponen dan warna bawaan Bootstrap 4.6.2 dari `public/assets/vendor/bootstrap-4.6.2-dist/`, tanpa CSS tambahan, font eksternal, atau CDN. Menu berada di kiri pada desktop dan di atas konten pada ponsel. Aset dapat digunakan tanpa koneksi internet.
+Tidak memerlukan Composer, npm, Laravel, atau URL rewrite. Seluruh halaman memakai komponen dan warna bawaan Bootstrap 4.6.2 dari `public/assets/vendor/bootstrap-4.6.2-dist/`, tanpa CSS tambahan atau font eksternal. Ikon ringkasan menggunakan SVG inline lokal tanpa library ikon tambahan. Menu berada di kiri pada desktop dan di atas konten pada ponsel. Chart.js 4.6.1 beserta lisensinya disimpan di `public/assets/vendor/chartjs-4.6.1/`. Layout, ikon, dan grafik tersedia secara lokal tanpa koneksi internet atau CDN.
 
 ## Dokumentasi
 
@@ -39,6 +39,7 @@ Pengujian integrasi memerlukan `pdo_mysql`, `curl`, izin membuat/menghapus datab
 - Ketinggian air menggunakan **cm**.
 - Buzzer hanya berbunyi jika diaktifkan dan `water_level > alarm_threshold`.
 - Klasifikasi Siaga merupakan label historis yang terpisah dari aturan buzzer. Label tampilannya adalah **Siaga 1**, **Siaga 2**, dan **Siaga 3**.
+- Dashboard menampilkan panel muka air untuk seluruh perangkat, dua kolom per baris pada desktop dan satu kolom pada layar kecil. Satu perangkat memakai lebar penuh. Panel berisi skala cm, rentang Siaga, status koneksi, dan pembacaan terakhir. Tombol detail/riwayat membuka indikator perangkat serta grafik tren 500 pembacaan terbaru, diperbarui setiap 5 detik setelah request selesai. Skala indikator menyesuaikan pembacaan serta konfigurasi rentang; bukan kapasitas fisik atau persentase isi.
 - Interval pengiriman diisi sebagai jam:menit:detik pada dashboard dan disimpan/dikirim sebagai detik; nilai default 60 detik.
 - Firmware terbaru menjadi target global untuk semua perangkat dengan board dan partisi OTA yang kompatibel.
 - `current_firmware` adalah versi target; `reported_firmware` adalah versi terpasang yang dilaporkan ESP32.
