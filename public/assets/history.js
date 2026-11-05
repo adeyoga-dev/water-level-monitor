@@ -18,7 +18,7 @@
   const colors = ["success", "warning", "danger", "secondary"].map((name) =>
     getComputedStyle(document.querySelector(`#history-legend .badge-${name}`)).backgroundColor);
   const primary = getComputedStyle(refresh).color;
-  const labels = { hour: "Hourly", day: "Daily", month: "Monthly", year: "Yearly" };
+  const labels = { minute: "Per minute", hour: "Hourly", day: "Daily", month: "Monthly", year: "Yearly" };
   const fullDate = new Intl.DateTimeFormat("en-GB", {
     timeZone: initial.timezone, year: "numeric", month: "short", day: "2-digit",
     hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short",
@@ -72,7 +72,14 @@
     });
     const radius = points.length <= 31 ? 3 : points.length <= 62 ? 2 : 0;
     const base = {
-      parsing: false, pointRadius: radius, pointHoverRadius: 6, pointHitRadius: 12,
+      parsing: false,
+      pointRadius: (context) => {
+        const index = context.dataIndex;
+        if ((points[index]?.y ?? null) === null) return 0;
+        const isolated = (points[index - 1]?.y ?? null) === null && (points[index + 1]?.y ?? null) === null;
+        return isolated ? 3 : radius;
+      },
+      pointHoverRadius: 6, pointHitRadius: 12,
       borderWidth: 2, tension: 0, spanGaps: false,
     };
     const datasets = grouped ? [
@@ -109,7 +116,7 @@
           legend: { display: grouped, position: "bottom", labels: { boxWidth: 16, padding: 10 } },
           tooltip: {
             callbacks: {
-              title: (items) => grouped && unit !== "hour" ? `${labels[unit]} · ${tooltipFormat.format(new Date(items[0].parsed.x))}` : fullDate.format(new Date(items[0].parsed.x)),
+              title: (items) => grouped && !["minute", "hour"].includes(unit) ? `${labels[unit]} · ${tooltipFormat.format(new Date(items[0].parsed.x))}` : fullDate.format(new Date(items[0].parsed.x)),
               label: (item) => grouped ? `${item.dataset.label}: ${item.parsed.y.toFixed(2)}`
                 : `${item.parsed.y.toFixed(2)} cm · ${item.raw.alarm_status === null ? "Unclassified" : `Siaga ${item.raw.alarm_status + 1}`}`,
               footer: (items) => grouped ? `${items[0].raw.count} readings in this interval` : "",

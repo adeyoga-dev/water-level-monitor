@@ -126,23 +126,28 @@ function deviceHistory(mixed $identifier, array $filters = []): array
             fail('From date must be on or before To date.');
         }
         $groupBy = $filters['group_by'] ?? 'auto';
-        if (!is_string($groupBy) || !in_array($groupBy, ['auto', 'hour', 'day', 'month', 'year'], true)) {
-            fail('Choose Auto, Hour, Day, Month, or Year grouping.');
+        if (!is_string($groupBy) || !in_array($groupBy, ['auto', 'minute', 'hour', 'day', 'month', 'year'], true)) {
+            fail('Choose Auto, Minute, Hour, Day, Month, or Year grouping.');
         }
         $days = (int) $fromDate->diff($toDate)->days + 1;
         $aggregation = $groupBy === 'auto' ? ($days === 1 ? 'hour' : ($days <= 62 ? 'day' : ($days <= 731 ? 'month' : 'year'))) : $groupBy;
+        if ($aggregation === 'minute' && $days !== 1) {
+            fail('Minute grouping requires a single date. Set From date and To date to the same date.');
+        }
         $endDate = $toDate->modify('+1 day');
         $utc = new DateTimeZone('UTC');
         $startUtc = $fromDate->setTimezone($utc);
         $endUtc = $endDate->setTimezone($utc);
         $bucketCount = match ($aggregation) {
+            'minute' => (int) ceil(($endUtc->getTimestamp() - $startUtc->getTimestamp()) / 60),
             'hour' => (int) ceil(($endUtc->getTimestamp() - $startUtc->getTimestamp()) / 3600),
             'day' => $days,
             'month' => ((int) $toDate->format('Y') - (int) $fromDate->format('Y')) * 12 + (int) $toDate->format('n') - (int) $fromDate->format('n') + 1,
             'year' => (int) $toDate->format('Y') - (int) $fromDate->format('Y') + 1,
         };
-        if ($bucketCount > 500) {
-            fail('This grouping would create more than 500 points. Shorten the date range or choose a larger grouping.');
+        $maxPoints = $aggregation === 'minute' ? 1500 : 500;
+        if ($bucketCount > $maxPoints) {
+            fail('This grouping would create more than ' . $maxPoints . ' points. Shorten the date range or choose a larger grouping.');
         }
         $selectedFilters = ['from' => $filters['from'], 'to' => $filters['to'], 'group_by' => $groupBy];
         $period = ['from' => $startUtc->getTimestamp() * 1000, 'to' => $endUtc->getTimestamp() * 1000 - 1];
@@ -185,35 +190,42 @@ function deviceHistory(mixed $identifier, array $filters = []): array
         $offsetSql = $offsetSql === '' ? '?' : 'CASE ' . $offsetSql . 'ELSE ? END';
         $offsetParams[] = $zone->getOffset($startUtc);
         $format = match ($aggregation) {
+            'minute' => '%Y-%m-%d %H:%i:00',
             'hour' => '%Y-%m-%d %H:00:00',
             'day' => '%Y-%m-%d 00:00:00',
             'month' => '%Y-%m-01 00:00:00',
             'year' => '%Y-01-01 00:00:00',
         };
-        $hourOffset = $aggregation === 'hour' ? ',utc_offset' : '';
+        $subDaily = in_array($aggregation, ['minute', 'hour'], true);
+        $bucketOffset = $subDaily ? ',utc_offset' : '';
         $rows = query(
-            "SELECT DATE_FORMAT(TIMESTAMPADD(SECOND,utc_offset,created_at),'$format') AS bucket$hourOffset, " .
+            "SELECT DATE_FORMAT(TIMESTAMPADD(SECOND,utc_offset,created_at),'$format') AS bucket$bucketOffset, " .
             'AVG(water_level) AS average_level, MIN(water_level) AS min_level, MAX(water_level) AS max_level, COUNT(*) AS reading_count ' .
             "FROM (SELECT created_at,water_level,CAST(($offsetSql) AS SIGNED) AS utc_offset FROM sensor_logs " .
-            "WHERE device_id=? AND created_at>=? AND created_at<?) AS history GROUP BY bucket$hourOffset ORDER BY bucket ASC" .
-            ($aggregation === 'hour' ? ',utc_offset DESC' : ''),
+            "WHERE device_id=? AND created_at>=? AND created_at<?) AS history GROUP BY bucket$bucketOffset ORDER BY bucket ASC" .
+            ($subDaily ? ',utc_offset DESC' : ''),
             [...$offsetParams, $identifier, $startUtc->format('Y-m-d H:i:s'), $endUtc->format('Y-m-d H:i:s')]
         )->fetchAll();
         $buckets = [];
         foreach ($rows as $row) {
-            $key = $row['bucket'] . ($aggregation === 'hour' ? '|' . $row['utc_offset'] : '');
+            $key = $row['bucket'] . ($subDaily ? '|' . $row['utc_offset'] : '');
             $buckets[$key] = $row;
             $readingCount += (int) $row['reading_count'];
         }
         $cursor = match ($aggregation) {
-            'hour' => $startUtc,
+            'minute', 'hour' => $startUtc,
             'day' => $fromDate,
             'month' => $fromDate->modify('first day of this month'),
             'year' => $fromDate->setDate((int) $fromDate->format('Y'), 1, 1),
         };
         while ($cursor < $endDate) {
             $local = $cursor->setTimezone($zone);
-            $key = $local->format($aggregation === 'hour' ? 'Y-m-d H:00:00' : 'Y-m-d 00:00:00') . ($aggregation === 'hour' ? '|' . $zone->getOffset($cursor) : '');
+            $keyFormat = match ($aggregation) {
+                'minute' => 'Y-m-d H:i:00',
+                'hour' => 'Y-m-d H:00:00',
+                default => 'Y-m-d 00:00:00',
+            };
+            $key = $local->format($keyFormat) . ($subDaily ? '|' . $zone->getOffset($cursor) : '');
             $row = $buckets[$key] ?? null;
             $points[] = [
                 'x' => max($cursor->getTimestamp() * 1000, $period['from']),

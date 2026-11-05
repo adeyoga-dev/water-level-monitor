@@ -47,11 +47,12 @@ pageStart('Device history', 'dashboard');
                         </div>
                         <div class="form-group col-12 col-md-4">
                             <label class="small" for="history-group">Group by</label>
-                            <select class="form-control form-control-sm" id="history-group" name="group_by">
-                                <?php foreach (['auto' => 'Auto', 'hour' => 'Hour', 'day' => 'Day', 'month' => 'Month', 'year' => 'Year'] as $value => $label): ?>
+                            <select class="form-control form-control-sm" id="history-group" name="group_by" aria-describedby="history-group-help">
+                                <?php foreach (['auto' => 'Auto', 'minute' => 'Minute', 'hour' => 'Hour', 'day' => 'Day', 'month' => 'Month', 'year' => 'Year'] as $value => $label): ?>
                                     <option value="<?= $value ?>" <?= $history['filters']['group_by'] === $value ? 'selected' : '' ?>><?= $label ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <small class="form-text text-muted" id="history-group-help">Minute: select a single date.</small>
                         </div>
                     </div>
                     <button class="btn btn-sm btn-primary" id="history-apply" type="submit">Apply filters</button>

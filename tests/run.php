@@ -173,6 +173,15 @@ try {
     check($daily['period']['from']===strtotime('2025-01-14 17:00:00 UTC')*1000 && $daily['period']['to']===strtotime('2025-01-15 17:00:00 UTC')*1000-1,'filtered axis uses inclusive selected local dates converted to UTC');
     $hourly=request($periodPath.'from=2025-01-15&to=2025-01-15')[2];
     check($hourly['aggregation']==='hour' && count($hourly['points'])===24 && $hourly['points'][0]['y']===10 && $hourly['points'][12]['y']===30 && $hourly['points'][23]['y']===50,'auto single day uses chronological hourly calendar buckets');
+    [$code,,$minutes]=request($periodPath.'from=2025-01-15&to=2025-01-15&group_by=minute');
+    check($code===200 && $minutes['aggregation']==='minute' && count($minutes['points'])===1440 && $minutes['points'][0]['y']===10 && $minutes['points'][720]['y']===30 && $minutes['points'][1439]['y']===50,'minute grouping includes the entire local day with correct midnight and final minute boundaries');
+    check($minutes['reading_count']===3 && $minutes['points'][1]['y']===null && $minutes['points'][1]['count']===0 && $minutes['points'][1]['x']-$minutes['points'][0]['x']===60000,'minute grouping preserves actual time spacing and null intervals');
+    $minuteAggregate=request('/api/device-history.php?device_id=ESP32-TEST&from=2099-01-01&to=2099-01-01&group_by=minute')[2];
+    check($minuteAggregate['reading_count']===520 && $minuteAggregate['points'][420]['y']===1259.5 && $minuteAggregate['points'][420]['min']===1000 && $minuteAggregate['points'][420]['max']===1519 && $minuteAggregate['points'][420]['count']===520,'minute averages extrema and sample counts include all scoped readings beyond the raw cap');
+    $minuteError=request($periodPath.'from=2025-01-15&to=2025-01-16&group_by=minute');
+    check($minuteError[0]===422 && str_contains($minuteError[2]['message'],'single date'),'minute grouping rejects multiple dates with clear validation');
+    $emptyMinutes=request('/api/device-history.php?device_id=ESP32-NEW&from=2024-01-01&to=2024-01-01&group_by=minute')[2];
+    check(count($emptyMinutes['points'])===1440 && $emptyMinutes['reading_count']===0 && count(array_filter($emptyMinutes['points'],fn($point)=>$point['y']!==null))===0,'empty minute history has no invented zero readings');
     $daily=request($periodPath.'from=2025-01-15&to=2025-01-17')[2];
     check($daily['aggregation']==='day' && array_column($daily['points'],'y')===[30,70,null] && $daily['points'][2]['count']===0 && $daily['points'][2]['min']===null,'auto short range uses daily buckets and missing intervals remain null');
     $monthly=request($periodPath.'from=2025-01-15&to=2025-12-31')[2];
@@ -199,6 +208,8 @@ try {
         putenv('APP_TIMEZONE=America/New_York');
         $dst=deviceHistory('ESP32-PERIOD',['from'=>'2024-11-03','to'=>'2024-11-03','group_by'=>'hour']);
         check(count($dst['points'])===25 && $dst['points'][1]['y']===11.0 && $dst['points'][2]['y']===22.0 && $dst['points'][2]['x']-$dst['points'][1]['x']===3600000,'repeated daylight saving hour keeps distinct chronological buckets without MySQL timezone tables');
+        $dstMinutes=deviceHistory('ESP32-PERIOD',['from'=>'2024-11-03','to'=>'2024-11-03','group_by'=>'minute']);
+        check(count($dstMinutes['points'])===1500 && $dstMinutes['points'][90]['y']===11.0 && $dstMinutes['points'][150]['y']===22.0 && $dstMinutes['points'][150]['x']-$dstMinutes['points'][90]['x']===3600000,'minute grouping preserves the two occurrences of a repeated local minute on a 25-hour day');
     } finally {
         putenv('APP_TIMEZONE='.$originalZone);
     }
