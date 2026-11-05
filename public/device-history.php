@@ -2,12 +2,18 @@
 require dirname(__DIR__) . '/app/bootstrap.php';
 require dirname(__DIR__) . '/app/admin.php';
 require dirname(__DIR__) . '/app/layout.php';
+$today = (new DateTimeImmutable('today', new DateTimeZone(config('APP_TIMEZONE', 'Asia/Jakarta'))))->format('Y-m-d');
+$filters = $_GET;
+if (!array_key_exists('from', $filters) && !array_key_exists('to', $filters)) {
+    $filters += ['from' => $today, 'to' => $today];
+}
 try {
-    $history = deviceHistory($_GET['device_id'] ?? null);
-} catch (InvalidArgumentException | OutOfBoundsException) {
-    http_response_code(404);
+    $history = deviceHistory($_GET['device_id'] ?? null, $filters);
+} catch (InvalidArgumentException | OutOfBoundsException $exception) {
+    $invalidFilters = $exception instanceof InvalidArgumentException && $exception->getMessage() !== 'Invalid device_id.';
+    http_response_code($invalidFilters ? 422 : 404);
     pageStart('Device history', 'dashboard');
-    pageTitle('DEVICE HISTORY', 'Device not found', 'Check the device identifier or return to the dashboard.');
+    pageTitle('DEVICE HISTORY', $invalidFilters ? 'Invalid date filters' : 'Device not found', $invalidFilters ? $exception->getMessage() : 'Check the device identifier or return to the dashboard.');
     echo '<a class="btn btn-primary" href="/">Back to dashboard</a>';
     pageEnd();
     exit;
@@ -27,9 +33,32 @@ pageStart('Device history', 'dashboard');
                 <button class="btn btn-sm btn-outline-primary my-1" id="history-refresh" type="button">Refresh</button>
             </div>
             <div class="card-body" id="history-content" aria-busy="true">
+                <form id="history-filters" data-today="<?= h($today) ?>" class="mb-3">
+                    <div class="form-row">
+                        <div class="form-group col-6 col-md-4">
+                            <label class="small" for="history-from">From date</label>
+                            <input class="form-control form-control-sm" id="history-from" name="from" type="date" min="1000-01-01" max="9999-12-30" value="<?= h($history['filters']['from']) ?>" required>
+                        </div>
+                        <div class="form-group col-6 col-md-4">
+                            <label class="small" for="history-to">To date</label>
+                            <input class="form-control form-control-sm" id="history-to" name="to" type="date" min="1000-01-01" max="9999-12-30" value="<?= h($history['filters']['to']) ?>" required>
+                        </div>
+                        <div class="form-group col-12 col-md-4">
+                            <label class="small" for="history-group">Group by</label>
+                            <select class="form-control form-control-sm" id="history-group" name="group_by">
+                                <?php foreach (['auto' => 'Auto', 'hour' => 'Hour', 'day' => 'Day', 'month' => 'Month', 'year' => 'Year'] as $value => $label): ?>
+                                    <option value="<?= $value ?>" <?= $history['filters']['group_by'] === $value ? 'selected' : '' ?>><?= $label ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-primary" id="history-apply" type="submit">Apply filters</button>
+                    <button class="btn btn-sm btn-outline-secondary" id="history-reset" type="button">Today</button>
+                    <small class="d-block text-muted mt-2" id="history-filter-state" role="status" aria-live="polite"></small>
+                </form>
                 <p class="small text-muted" id="history-status" role="status" aria-live="polite">Loading water level trend…</p>
                 <div class="alert alert-danger" id="history-error" role="alert" hidden></div>
-                <p class="text-muted py-4 text-center" id="history-empty" hidden>No sensor readings have been recorded for this device.</p>
+                <p class="text-muted py-4 text-center" id="history-empty" hidden>No sensor readings in this date range.</p>
                 <div id="history-chart-area" hidden>
                     <canvas id="history-chart" role="img" aria-label="Water level in centimetres over time" aria-describedby="history-summary">Water level trend. A text summary is provided below the chart.</canvas>
                 </div>
@@ -41,7 +70,7 @@ pageStart('Device history', 'dashboard');
                     <span class="badge badge-danger">Siaga 3</span>
                     <span class="badge badge-secondary">Unclassified</span>
                 </div>
-                <p class="small text-muted mb-0">Latest <?= $history['limit'] ?> readings, ordered by time. Times use <?= h($history['timezone']) ?>. Refreshes every 5 seconds.</p>
+                <p class="small text-muted mb-0" id="history-note"></p>
             </div>
         </section>
     </div>

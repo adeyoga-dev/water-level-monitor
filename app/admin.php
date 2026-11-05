@@ -97,11 +97,55 @@ function deviceList(): array
     return $devices;
 }
 
-/** @return array{device: array, points: list<array{x: int, y: float, alarm_status: ?int}>, timezone: string, limit: int} */
-function deviceHistory(mixed $identifier): array
+/** Returns raw recent readings or calendar aggregates for an explicitly selected local date range. */
+function deviceHistory(mixed $identifier, array $filters = []): array
 {
     if (!is_string($identifier) || !preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $identifier)) {
         fail('Invalid device_id.');
+    }
+    $timezone = config('APP_TIMEZONE', 'Asia/Jakarta');
+    $zone = new DateTimeZone($timezone);
+    $filtered = array_key_exists('from', $filters) || array_key_exists('to', $filters) || array_key_exists('group_by', $filters);
+    $aggregation = 'raw';
+    $selectedFilters = null;
+    $period = null;
+    if ($filtered) {
+        foreach (['from', 'to'] as $field) {
+            $value = $filters[$field] ?? null;
+            if (!is_string($value) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $value)) {
+                fail('Provide valid From and To dates in YYYY-MM-DD format.');
+            }
+            $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value, $zone);
+            if (!$date || $date->format('Y-m-d') !== $value || (int) $date->format('Y') < 1000 || $value > '9999-12-30') {
+                fail('Provide valid From and To dates in YYYY-MM-DD format.');
+            }
+        }
+        $fromDate = new DateTimeImmutable($filters['from'] . ' 00:00:00', $zone);
+        $toDate = new DateTimeImmutable($filters['to'] . ' 00:00:00', $zone);
+        if ($fromDate > $toDate) {
+            fail('From date must be on or before To date.');
+        }
+        $groupBy = $filters['group_by'] ?? 'auto';
+        if (!is_string($groupBy) || !in_array($groupBy, ['auto', 'hour', 'day', 'month', 'year'], true)) {
+            fail('Choose Auto, Hour, Day, Month, or Year grouping.');
+        }
+        $days = (int) $fromDate->diff($toDate)->days + 1;
+        $aggregation = $groupBy === 'auto' ? ($days === 1 ? 'hour' : ($days <= 62 ? 'day' : ($days <= 731 ? 'month' : 'year'))) : $groupBy;
+        $endDate = $toDate->modify('+1 day');
+        $utc = new DateTimeZone('UTC');
+        $startUtc = $fromDate->setTimezone($utc);
+        $endUtc = $endDate->setTimezone($utc);
+        $bucketCount = match ($aggregation) {
+            'hour' => (int) ceil(($endUtc->getTimestamp() - $startUtc->getTimestamp()) / 3600),
+            'day' => $days,
+            'month' => ((int) $toDate->format('Y') - (int) $fromDate->format('Y')) * 12 + (int) $toDate->format('n') - (int) $fromDate->format('n') + 1,
+            'year' => (int) $toDate->format('Y') - (int) $fromDate->format('Y') + 1,
+        };
+        if ($bucketCount > 500) {
+            fail('This grouping would create more than 500 points. Shorten the date range or choose a larger grouping.');
+        }
+        $selectedFilters = ['from' => $filters['from'], 'to' => $filters['to'], 'group_by' => $groupBy];
+        $period = ['from' => $startUtc->getTimestamp() * 1000, 'to' => $endUtc->getTimestamp() * 1000 - 1];
     }
     $device = query('SELECT * FROM devices WHERE device_id=?', [$identifier])->fetch();
     if (!$device) {
@@ -117,14 +161,70 @@ function deviceHistory(mixed $identifier): array
             $device['device_status'] = 0;
         }
     }
-    $logs = query('SELECT water_level,alarm_status,created_at FROM sensor_logs WHERE device_id=? ORDER BY created_at DESC,id DESC LIMIT 500', [$identifier])->fetchAll();
     $points = [];
-    foreach (array_reverse($logs) as $log) {
-        $points[] = [
-            'x' => (new DateTimeImmutable($log['created_at'], new DateTimeZone('UTC')))->getTimestamp() * 1000,
-            'y' => (float) $log['water_level'],
-            'alarm_status' => $log['alarm_status'] === null ? null : (int) $log['alarm_status'],
-        ];
+    $readingCount = 0;
+    if (!$filtered) {
+        $logs = query('SELECT water_level,alarm_status,created_at FROM sensor_logs WHERE device_id=? ORDER BY created_at DESC,id DESC LIMIT 500', [$identifier])->fetchAll();
+        foreach (array_reverse($logs) as $log) {
+            $points[] = [
+                'x' => (new DateTimeImmutable($log['created_at'], new DateTimeZone('UTC')))->getTimestamp() * 1000,
+                'y' => (float) $log['water_level'],
+                'alarm_status' => $log['alarm_status'] === null ? null : (int) $log['alarm_status'],
+            ];
+        }
+        $readingCount = count($points);
+    } else {
+        // Compute offsets in PHP so calendar grouping does not depend on MySQL timezone tables.
+        $offsetSql = '';
+        $offsetParams = [];
+        $transitions = $zone->getTransitions($startUtc->getTimestamp(), $endUtc->getTimestamp()) ?: [];
+        foreach (array_reverse(array_slice($transitions, 1)) as $transition) {
+            $offsetSql .= 'WHEN created_at >= ? THEN ? ';
+            array_push($offsetParams, gmdate('Y-m-d H:i:s', $transition['ts']), $transition['offset']);
+        }
+        $offsetSql = $offsetSql === '' ? '?' : 'CASE ' . $offsetSql . 'ELSE ? END';
+        $offsetParams[] = $zone->getOffset($startUtc);
+        $format = match ($aggregation) {
+            'hour' => '%Y-%m-%d %H:00:00',
+            'day' => '%Y-%m-%d 00:00:00',
+            'month' => '%Y-%m-01 00:00:00',
+            'year' => '%Y-01-01 00:00:00',
+        };
+        $hourOffset = $aggregation === 'hour' ? ',utc_offset' : '';
+        $rows = query(
+            "SELECT DATE_FORMAT(TIMESTAMPADD(SECOND,utc_offset,created_at),'$format') AS bucket$hourOffset, " .
+            'AVG(water_level) AS average_level, MIN(water_level) AS min_level, MAX(water_level) AS max_level, COUNT(*) AS reading_count ' .
+            "FROM (SELECT created_at,water_level,CAST(($offsetSql) AS SIGNED) AS utc_offset FROM sensor_logs " .
+            "WHERE device_id=? AND created_at>=? AND created_at<?) AS history GROUP BY bucket$hourOffset ORDER BY bucket ASC" .
+            ($aggregation === 'hour' ? ',utc_offset DESC' : ''),
+            [...$offsetParams, $identifier, $startUtc->format('Y-m-d H:i:s'), $endUtc->format('Y-m-d H:i:s')]
+        )->fetchAll();
+        $buckets = [];
+        foreach ($rows as $row) {
+            $key = $row['bucket'] . ($aggregation === 'hour' ? '|' . $row['utc_offset'] : '');
+            $buckets[$key] = $row;
+            $readingCount += (int) $row['reading_count'];
+        }
+        $cursor = match ($aggregation) {
+            'hour' => $startUtc,
+            'day' => $fromDate,
+            'month' => $fromDate->modify('first day of this month'),
+            'year' => $fromDate->setDate((int) $fromDate->format('Y'), 1, 1),
+        };
+        while ($cursor < $endDate) {
+            $local = $cursor->setTimezone($zone);
+            $key = $local->format($aggregation === 'hour' ? 'Y-m-d H:00:00' : 'Y-m-d 00:00:00') . ($aggregation === 'hour' ? '|' . $zone->getOffset($cursor) : '');
+            $row = $buckets[$key] ?? null;
+            $points[] = [
+                'x' => max($cursor->getTimestamp() * 1000, $period['from']),
+                'y' => $row ? (float) $row['average_level'] : null,
+                'min' => $row ? (float) $row['min_level'] : null,
+                'max' => $row ? (float) $row['max_level'] : null,
+                'count' => $row ? (int) $row['reading_count'] : 0,
+                'alarm_status' => null,
+            ];
+            $cursor = $cursor->modify('+1 ' . $aggregation);
+        }
     }
-    return ['device' => $device, 'points' => $points, 'timezone' => config('APP_TIMEZONE', 'Asia/Jakarta'), 'limit' => 500];
+    return ['device' => $device, 'points' => $points, 'timezone' => $timezone, 'limit' => $filtered ? null : 500, 'filters' => $selectedFilters, 'aggregation' => $aggregation, 'period' => $period, 'reading_count' => $readingCount];
 }

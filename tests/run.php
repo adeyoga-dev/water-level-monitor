@@ -149,6 +149,46 @@ try {
     $limitedHistory=request('/api/device-history.php?device_id=ESP32-TEST')[2];
     check(count($limitedHistory['points'])===500 && $limitedHistory['limit']===500 && $limitedHistory['points'][0]['y']===1020 && $limitedHistory['points'][499]['y']===1519,'history is bounded to the latest 500 readings with stable ordering for equal timestamps');
     check(!in_array(99999,array_column($limitedHistory['points'],'y'),true),'tampering with history device selection cannot mix another device readings');
+    $periodDevice=$input;$periodDevice['device_id']='ESP32-PERIOD';saveDevice($periodDevice);
+    foreach ([['2025-01-14 16:59:59',999],['2025-01-14 17:00:00',10],['2025-01-15 05:00:00',30],['2025-01-15 16:59:59',50],['2025-01-15 17:00:00',70],['2025-02-02 04:00:00',80],['2026-01-03 05:00:00',90]] as [$time,$level]) {
+        query('INSERT INTO sensor_logs(device_id,water_level,alarm_status,created_at) VALUES(?,?,?,?)',['ESP32-PERIOD',$level,2,$time]);
+    }
+    $periodPath='/api/device-history.php?device_id=ESP32-PERIOD&';
+    [$code,,$daily]=request($periodPath.'from=2025-01-15&to=2025-01-15&group_by=day');
+    check($code===200 && $daily['aggregation']==='day' && $daily['reading_count']===3 && count($daily['points'])===1,'date range includes both local date boundaries and excludes adjacent readings');
+    check($daily['points'][0]['y']===30 && $daily['points'][0]['min']===10 && $daily['points'][0]['max']===50 && $daily['points'][0]['count']===3,'daily average preserves minimum maximum and sample count');
+    check($daily['period']['from']===strtotime('2025-01-14 17:00:00 UTC')*1000 && $daily['period']['to']===strtotime('2025-01-15 17:00:00 UTC')*1000-1,'filtered axis uses inclusive selected local dates converted to UTC');
+    $hourly=request($periodPath.'from=2025-01-15&to=2025-01-15')[2];
+    check($hourly['aggregation']==='hour' && count($hourly['points'])===24 && $hourly['points'][0]['y']===10 && $hourly['points'][12]['y']===30 && $hourly['points'][23]['y']===50,'auto single day uses chronological hourly calendar buckets');
+    $daily=request($periodPath.'from=2025-01-15&to=2025-01-17')[2];
+    check($daily['aggregation']==='day' && array_column($daily['points'],'y')===[30,70,null] && $daily['points'][2]['count']===0 && $daily['points'][2]['min']===null,'auto short range uses daily buckets and missing intervals remain null');
+    $monthly=request($periodPath.'from=2025-01-15&to=2025-12-31')[2];
+    check($monthly['aggregation']==='month' && count($monthly['points'])===12 && $monthly['points'][0]['y']===40 && $monthly['points'][1]['y']===80 && $monthly['reading_count']===5,'auto annual range averages all readings by month including partial first month');
+    check($monthly['points'][0]['x']===$monthly['period']['from'],'partial first calendar bucket stays inside selected axis range');
+    $yearly=request($periodPath.'from=2025-01-15&to=2026-12-31&group_by=year')[2];
+    check($yearly['aggregation']==='year' && count($yearly['points'])===2 && $yearly['points'][0]['y']===48 && $yearly['points'][1]['y']===90,'year grouping uses weighted means of actual readings rather than means of means');
+    check(request($periodPath.'from=2025-01-15&to=2028-01-01')[2]['aggregation']==='year','auto long range groups by year');
+    $leap=request($periodPath.'from=2024-02-27&to=2024-03-01&group_by=day')[2];
+    check(count($leap['points'])===4 && $leap['reading_count']===0 && array_column($leap['points'],'y')===[null,null,null,null],'leap day and empty calendar intervals are retained without fabricated zeros');
+    $allReadings=request('/api/device-history.php?device_id=ESP32-TEST&from=2099-01-01&to=2099-01-01&group_by=day')[2];
+    check($allReadings['reading_count']===520 && $allReadings['points'][0]['y']===1259.5 && $allReadings['points'][0]['min']===1000 && $allReadings['points'][0]['max']===1519 && $allReadings['limit']===null,'filtered aggregates include all selected readings beyond the raw 500 reading cap and remain device scoped');
+    $beforeFilterCount=(int)query('SELECT COUNT(*) FROM sensor_logs')->fetchColumn();
+    foreach (['from=2025-02-30&to=2025-03-01','from=2025-01-16&to=2025-01-15','from=2025-01-15','from[]=2025-01-15&to=2025-01-16','from=2025-01-15&to=2025-01-16&group_by=bad','from=2025-01-15&to=2025-01-16&group_by[]=day','from=2025-01-01&to=2025-12-31&group_by=hour'] as $filters) {
+        check(request($periodPath.$filters)[0]===422,'invalid or excessive history filter rejected: '.$filters);
+    }
+    check(request('/device-history.php?device_id=ESP32-PERIOD&from=2025-02-30&to=2025-03-01')[0]===422,'invalid page date filters produce a controlled validation response');
+    check((int)query('SELECT COUNT(*) FROM sensor_logs')->fetchColumn()===$beforeFilterCount,'filtered GET and invalid filters never insert readings');
+    foreach ([['2024-11-03 05:30:00',11],['2024-11-03 06:30:00',22]] as [$time,$level]) {
+        query('INSERT INTO sensor_logs(device_id,water_level,alarm_status,created_at) VALUES(?,?,?,?)',['ESP32-PERIOD',$level,0,$time]);
+    }
+    $originalZone=config('APP_TIMEZONE','Asia/Jakarta');
+    try {
+        putenv('APP_TIMEZONE=America/New_York');
+        $dst=deviceHistory('ESP32-PERIOD',['from'=>'2024-11-03','to'=>'2024-11-03','group_by'=>'hour']);
+        check(count($dst['points'])===25 && $dst['points'][1]['y']===11.0 && $dst['points'][2]['y']===22.0 && $dst['points'][2]['x']-$dst['points'][1]['x']===3600000,'repeated daylight saving hour keeps distinct chronological buckets without MySQL timezone tables');
+    } finally {
+        putenv('APP_TIMEZONE='.$originalZone);
+    }
     echo "$checks checks passed.\n";
 } catch(Throwable $e) {
     fwrite(STDERR,(string)$e."\n");$failed=true;
