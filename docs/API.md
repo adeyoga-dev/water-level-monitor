@@ -8,18 +8,18 @@ Gunakan `Content-Type: application/json`. Ukuran body maksimum 16 KB.
 
 ```json
 {
-  "device_id": "ESP32-001",
-  "water_level": 25.5,
-  "device_status": 1,
-  "firmware_version": "v1.0.0"
+    "device_id": "ESP32-001",
+    "water_level": 25.5,
+    "device_status": 1,
+    "firmware_version": "v1.0.0"
 }
 ```
 
-| Field | Validasi |
-|---|---|
-| `device_id` | Wajib berupa string: 1–64 huruf ASCII, angka, `-`, atau `_` |
-| `water_level` | Wajib berupa nilai numerik terbatas dalam cm; mendukung desimal |
-| `device_status` | Wajib berupa integer JSON `0` atau `1`; kirim `1` saat beroperasi |
+| Field              | Validasi                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| `device_id`        | Wajib berupa string: 1–64 huruf ASCII, angka, `-`, atau `_`                                   |
+| `water_level`      | Wajib berupa nilai numerik terbatas dalam cm; mendukung desimal                               |
+| `device_status`    | Wajib berupa integer JSON `0` atau `1`; kirim `1` saat beroperasi                             |
 | `firmware_version` | Opsional dengan format `vMAJOR.MINOR.PATCH`; versi tersimpan dipertahankan jika tidak dikirim |
 
 Nama field yang benar adalah **`device_status`**, bukan `device_statust`. Boolean tidak diterima untuk field ini.
@@ -30,13 +30,13 @@ Contoh respons berhasil `200`:
 
 ```json
 {
-  "status": "success",
-  "alarm_threshold": 20,
-  "buzzer_status": 1,
-  "latest_firmware": "v1.1.0",
-  "ota_url": "http://192.168.1.10:8000/api/firmware-download.php?id=1",
-  "firmware_sha256": "<64 karakter heksadesimal SHA-256>",
-  "update_interval": 60
+    "status": "success",
+    "alarm_threshold": 20,
+    "buzzer_status": 1,
+    "latest_firmware": "v1.1.0",
+    "ota_url": "http://192.168.1.10:8000/api/firmware-download.php?id=1",
+    "firmware_sha256": "<64 karakter heksadesimal SHA-256>",
+    "update_interval": 60
 }
 ```
 
@@ -90,16 +90,16 @@ ESP32 membandingkan versi numerik (`v1.10.0 > v1.9.0`), mengunduh dan memverifik
 Pesan API tetap menggunakan bahasa Inggris sesuai implementasi:
 
 ```json
-{"status":"error","message":"Device is not registered."}
+{ "status": "error", "message": "Device is not registered." }
 ```
 
-| HTTP | Arti |
-|---|---|
+| HTTP  | Arti                                           |
+| ----- | ---------------------------------------------- |
 | `404` | Perangkat, firmware, atau file tidak ditemukan |
-| `405` | Metode salah; lihat header `Allow` |
-| `413` | Body telemetry melebihi 16 KB |
-| `415` | Content-Type telemetry bukan application/json |
-| `422` | JSON, input, atau ID tidak valid |
+| `405` | Metode salah; lihat header `Allow`             |
+| `413` | Body telemetry melebihi 16 KB                  |
+| `415` | Content-Type telemetry bukan application/json  |
+| `422` | JSON, input, atau ID tidak valid               |
 | `500` | Error internal; detail dicatat pada log server |
 
 Saat jaringan gagal, contoh firmware mempertahankan konfigurasi terakhir yang valid. Sebelum konfigurasi pertama diterima, buzzer dinonaktifkan. Pembacaan sensor invalid tidak dikirim dan menonaktifkan buzzer; perangkat akhirnya menjadi Offline jika telemetry berhenti.

@@ -1,4 +1,5 @@
 CREATE DATABASE IF NOT EXISTS water_level_detection CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 USE water_level_detection;
 
 CREATE TABLE IF NOT EXISTS firmwares (
@@ -10,7 +11,7 @@ CREATE TABLE IF NOT EXISTS firmwares (
     sha256 CHAR(64) NOT NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL
-) ENGINE=InnoDB;
+) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS devices (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -25,7 +26,7 @@ CREATE TABLE IF NOT EXISTS devices (
     last_seen_at DATETIME NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL
-) ENGINE=InnoDB;
+) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS device_alert_ranges (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -34,8 +35,8 @@ CREATE TABLE IF NOT EXISTS device_alert_ranges (
     min_level DOUBLE NULL,
     max_level DOUBLE NULL,
     UNIQUE KEY device_alert (device_id, alarm_status),
-    CONSTRAINT fk_range_device FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE RESTRICT
-) ENGINE=InnoDB;
+    CONSTRAINT fk_range_device FOREIGN KEY (device_id) REFERENCES devices (id) ON DELETE RESTRICT
+) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS sensor_logs (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -46,5 +47,5 @@ CREATE TABLE IF NOT EXISTS sensor_logs (
     KEY logs_device_time (device_id, created_at, id),
     KEY logs_time (created_at, id),
     KEY logs_alarm_time (alarm_status, created_at),
-    CONSTRAINT fk_log_device FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE=InnoDB;
+    CONSTRAINT fk_log_device FOREIGN KEY (device_id) REFERENCES devices (device_id) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB;

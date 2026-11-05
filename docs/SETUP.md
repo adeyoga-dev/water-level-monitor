@@ -107,11 +107,11 @@ Batas aplikasi tetap 16 MB meskipun limit PHP lebih tinggi. File disimpan sebaga
 3. Atur threshold alarm dalam cm, interval pengiriman, dan sakelar buzzer.
 4. Isi ketiga rentang Siaga, misalnya:
 
-| Label | Batas bawah | Batas atas |
-|---|---:|---:|
-| Siaga 1 | kosong | 20 |
-| Siaga 2 | 20 | 40 |
-| Siaga 3 | 40 | kosong |
+| Label   | Batas bawah | Batas atas |
+| ------- | ----------: | ---------: |
+| Siaga 1 |      kosong |         20 |
+| Siaga 2 |          20 |         40 |
+| Siaga 3 |          40 |     kosong |
 
 Pembacaan `20` masuk Siaga 2; `40` masuk Siaga 3. Batas bawah termasuk rentang, sedangkan batas atas tidak termasuk. Batas kosong berarti tanpa batas pada sisi tersebut. Ketiga rentang wajib diisi dan tidak boleh tumpang tindih. Celah diperbolehkan dan menghasilkan label **Unclassified**.
 
@@ -139,16 +139,16 @@ Versi yang ditulis saat upload **harus sama** dengan `FIRMWARE_VERSION` di dalam
 
 ## Pemecahan masalah
 
-| Gejala | Pemeriksaan |
-|---|---|
-| Halaman error server | Baca `storage/logs/php.log`; cek kredensial, database, dan impor schema |
-| `Access denied` | Isi password database yang benar pada `.env`; template tidak menebak kredensial |
-| `could not find driver` | Aktifkan `pdo_mysql` pada PHP yang menjalankan aplikasi |
-| Form upload kedaluwarsa | Muat ulang; cek session dapat ditulis dan `post_max_size` lebih besar dari file |
-| Firmware tidak bisa disimpan | Cek izin menulis ke `storage/firmware` |
-| Konfigurasi ESP32 gagal | Cek IP LAN, port, firewall, ID terdaftar, dan respons API |
-| OTA gagal | Cek board, partisi, ukuran slot, checksum, serta versi hasil kompilasi; lihat Serial Monitor |
-| Perangkat tetap Offline | GET tidak menandai Online; sensor harus menghasilkan nilai valid dan POST harus berhasil |
-| Pengaturan buzzer belum berlaku | ESP32 menerima perubahan pada GET/POST berikutnya sesuai interval |
+| Gejala                          | Pemeriksaan                                                                                  |
+| ------------------------------- | -------------------------------------------------------------------------------------------- |
+| Halaman error server            | Baca `storage/logs/php.log`; cek kredensial, database, dan impor schema                      |
+| `Access denied`                 | Isi password database yang benar pada `.env`; template tidak menebak kredensial              |
+| `could not find driver`         | Aktifkan `pdo_mysql` pada PHP yang menjalankan aplikasi                                      |
+| Form upload kedaluwarsa         | Muat ulang; cek session dapat ditulis dan `post_max_size` lebih besar dari file              |
+| Firmware tidak bisa disimpan    | Cek izin menulis ke `storage/firmware`                                                       |
+| Konfigurasi ESP32 gagal         | Cek IP LAN, port, firewall, ID terdaftar, dan respons API                                    |
+| OTA gagal                       | Cek board, partisi, ukuran slot, checksum, serta versi hasil kompilasi; lihat Serial Monitor |
+| Perangkat tetap Offline         | GET tidak menandai Online; sensor harus menghasilkan nilai valid dan POST harus berhasil     |
+| Pengaturan buzzer belum berlaku | ESP32 menerima perubahan pada GET/POST berikutnya sesuai interval                            |
 
 Login dan token ditiadakan sesuai kebutuhan. Form dashboard menggunakan perlindungan CSRF melalui session; endpoint perangkat tidak membuka CORS bebas.

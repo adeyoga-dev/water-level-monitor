@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 function parseEnv(string $source): array
@@ -38,8 +39,12 @@ function db(): PDO
     if (!$pdo) {
         $charset = config('DB_CHARSET', 'utf8mb4');
         if ($charset !== 'utf8mb4') throw new RuntimeException('DB_CHARSET must be utf8mb4.');
-        $pdo = new PDO('mysql:host=' . config('DB_HOST', '127.0.0.1') . ';port=' . config('DB_PORT', '3306') . ';dbname=' . config('DB_DATABASE', 'water_level_detection') . ';charset=' . $charset,
-            config('DB_USERNAME', 'root'), config('DB_PASSWORD'), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false]);
+        $pdo = new PDO(
+            'mysql:host=' . config('DB_HOST', '127.0.0.1') . ';port=' . config('DB_PORT', '3306') . ';dbname=' . config('DB_DATABASE', 'water_level_detection') . ';charset=' . $charset,
+            config('DB_USERNAME', 'root'),
+            config('DB_PASSWORD'),
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false]
+        );
         $pdo->exec("SET time_zone = '+00:00'");
     }
     return $pdo;
@@ -52,13 +57,22 @@ function query(string $sql, array $params = []): PDOStatement
     return $statement;
 }
 
-function h(mixed $value): string { return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8'); }
-function now(): string { return gmdate('Y-m-d H:i:s'); }
+function h(mixed $value): string
+{
+    return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
+}
+function now(): string
+{
+    return gmdate('Y-m-d H:i:s');
+}
 function displayTime(?string $value): string
 {
     return $value ? (new DateTimeImmutable($value, new DateTimeZone('UTC')))->setTimezone(new DateTimeZone(config('APP_TIMEZONE', 'Asia/Jakarta')))->format('d M Y H:i:s') : 'Never connected';
 }
-function fail(string $message): never { throw new InvalidArgumentException($message); }
+function fail(string $message): never
+{
+    throw new InvalidArgumentException($message);
+}
 function finiteNumber(mixed $value, string $label): float
 {
     if ((!is_string($value) && !is_int($value) && !is_float($value)) || !is_numeric($value) || !is_finite((float) $value)) fail($label . ' must be a finite number.');
@@ -91,20 +105,34 @@ function classify(float $level, array $ranges): ?int
     }
     return null;
 }
-function alertLabel(mixed $status): string { return $status === null ? 'Unclassified' : 'Siaga ' . ((int) $status + 1); }
-function alarmOn(float $water, float $threshold, bool $enabled): bool { return $enabled && $water > $threshold; }
+function alertLabel(mixed $status): string
+{
+    return $status === null ? 'Unclassified' : 'Siaga ' . ((int) $status + 1);
+}
+function alarmOn(float $water, float $threshold, bool $enabled): bool
+{
+    return $enabled && $water > $threshold;
+}
 function markOffline(): int
 {
     return query('UPDATE devices SET device_status=0 WHERE device_status=1 AND (last_seen_at IS NULL OR TIMESTAMPDIFF(SECOND,last_seen_at,UTC_TIMESTAMP()) > GREATEST(3 * update_interval,30))')->rowCount();
 }
-function latestFirmware(): array|false { return query('SELECT * FROM firmwares ORDER BY id DESC LIMIT 1')->fetch(); }
+function latestFirmware(): array|false
+{
+    return query('SELECT * FROM firmwares ORDER BY id DESC LIMIT 1')->fetch();
+}
 function deviceConfig(array $device): array
 {
     $firmware = latestFirmware();
-    return ['status' => 'success', 'alarm_threshold' => (float) $device['alarm_threshold'], 'buzzer_status' => (int) $device['buzzer_status'],
+    return [
+        'status' => 'success',
+        'alarm_threshold' => (float) $device['alarm_threshold'],
+        'buzzer_status' => (int) $device['buzzer_status'],
         'latest_firmware' => $firmware ? $firmware['version'] : null,
         'ota_url' => $firmware ? rtrim(config('APP_URL', 'http://localhost:8000'), '/') . '/api/firmware-download.php?id=' . $firmware['id'] : null,
-        'firmware_sha256' => $firmware ? $firmware['sha256'] : null, 'update_interval' => (int) $device['update_interval']];
+        'firmware_sha256' => $firmware ? $firmware['sha256'] : null,
+        'update_interval' => (int) $device['update_interval']
+    ];
 }
 function telemetry(array $input): array
 {
@@ -133,7 +161,11 @@ function startSession(): void
 {
     if (session_status() === PHP_SESSION_NONE) session_start(['cookie_httponly' => true, 'cookie_samesite' => 'Lax', 'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off']);
 }
-function csrf(): string { startSession(); return $_SESSION['csrf'] ??= bin2hex(random_bytes(32)); }
+function csrf(): string
+{
+    startSession();
+    return $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
+}
 function checkCsrf(): void
 {
     $provided = $_POST['csrf'] ?? '';
@@ -149,8 +181,15 @@ function jsonResponse(array $body, int $status = 200): never
 }
 function api(callable $handler, string $method): never
 {
-    if (($_SERVER['REQUEST_METHOD'] ?? '') !== $method) { header('Allow: ' . $method); jsonResponse(['status'=>'error','message'=>'Method not allowed.'],405); }
-    try { jsonResponse($handler()); }
-    catch (InvalidArgumentException $e) { jsonResponse(['status'=>'error','message'=>$e->getMessage()],422); }
-    catch (OutOfBoundsException $e) { jsonResponse(['status'=>'error','message'=>$e->getMessage()],404); }
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== $method) {
+        header('Allow: ' . $method);
+        jsonResponse(['status' => 'error', 'message' => 'Method not allowed.'], 405);
+    }
+    try {
+        jsonResponse($handler());
+    } catch (InvalidArgumentException $e) {
+        jsonResponse(['status' => 'error', 'message' => $e->getMessage()], 422);
+    } catch (OutOfBoundsException $e) {
+        jsonResponse(['status' => 'error', 'message' => $e->getMessage()], 404);
+    }
 }
