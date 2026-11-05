@@ -32,24 +32,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 pageStart($id ? 'Edit device' : 'Add device', 'devices');
 pageTitle('DEVICE SETTINGS', $id ? 'Edit device' : 'Add device', 'Set the device identity and its response to water levels.');
 ?>
-<?php if ($error): ?><div class="notice error"><?= h($error) ?></div><?php endif ?>
-<form method="post"><input type="hidden" name="csrf" value="<?= h(csrf()) ?>"><input type="hidden" name="id" value="<?= h($id) ?>">
-    <div class="form-grid">
-        <div class="panel form-panel">
-            <h2>Device configuration</h2><label>Device ID<input name="device_id" maxlength="64" pattern="[A-Za-z0-9_-]+" required value="<?= h($values['device_id'] ?? '') ?>" <?= $id ? 'readonly' : '' ?> placeholder="ESP32-001"></label>
-            <p class="hint">Must match the ID in the ESP32 firmware exactly. Cannot be changed after creation.</p><label>Reporting interval</label>
-            <div class="duration"><?php foreach (['hours' => 'Hours', 'minutes' => 'Minutes', 'seconds' => 'Seconds'] as $key => $label): ?><label><input type="number" name="<?= $key ?>" min="0" max="<?= $key === 'hours' ? 23 : 59 ?>" required value="<?= h($values[$key] ?? 0) ?>"><small><?= $label ?></small></label><?php endforeach ?></div>
-            <p class="hint">The sensor is sampled every 5 seconds. Readings are sent at this interval, with a minimum of 1 second.</p><label>Alarm threshold (cm)<input type="number" step="any" name="alarm_threshold" required value="<?= h($values['alarm_threshold'] ?? '') ?>" placeholder="Example: 20"></label><label class="switch-label"><input type="checkbox" name="buzzer_status" value="1" <?= !empty($values['buzzer_status']) ? 'checked' : '' ?>><span>Enable buzzer</span></label>
-            <p class="hint">The buzzer sounds when enabled and the water level exceeds the threshold. It stays off at the exact threshold.</p>
+<?php if ($error): ?><div class="alert alert-danger" role="alert"><?= h($error) ?></div><?php endif ?>
+<form method="post">
+    <input type="hidden" name="csrf" value="<?= h(csrf()) ?>">
+    <input type="hidden" name="id" value="<?= h($id) ?>">
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header"><h2 class="h5 mb-0">Device configuration</h2></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="device-id">Device ID</label>
+                        <input class="form-control" id="device-id" name="device_id" maxlength="64" pattern="[A-Za-z0-9_-]+" required value="<?= h($values['device_id'] ?? '') ?>" <?= $id ? 'readonly' : '' ?> placeholder="ESP32-001" aria-describedby="device-id-help">
+                        <small class="form-text text-muted" id="device-id-help">Must match the ID in the ESP32 firmware exactly. Cannot be changed after creation.</small>
+                    </div>
+                    <fieldset class="form-group" aria-describedby="interval-help">
+                        <legend class="h6">Reporting interval</legend>
+                        <div class="form-row">
+                            <?php foreach (['hours' => 'Hours', 'minutes' => 'Minutes', 'seconds' => 'Seconds'] as $key => $label): ?>
+                                <div class="col-4">
+                                    <label class="small" for="interval-<?= $key ?>"><?= $label ?></label>
+                                    <input class="form-control" id="interval-<?= $key ?>" type="number" name="<?= $key ?>" min="0" max="<?= $key === 'hours' ? 23 : 59 ?>" required value="<?= h($values[$key] ?? 0) ?>">
+                                </div>
+                            <?php endforeach ?>
+                        </div>
+                        <small class="form-text text-muted" id="interval-help">The sensor is sampled every 5 seconds. Readings are sent at this interval, with a minimum of 1 second.</small>
+                    </fieldset>
+                    <div class="form-group">
+                        <label for="alarm-threshold">Alarm threshold (cm)</label>
+                        <input class="form-control" id="alarm-threshold" type="number" step="any" name="alarm_threshold" required value="<?= h($values['alarm_threshold'] ?? '') ?>" placeholder="Example: 20">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" id="buzzer-status" type="checkbox" name="buzzer_status" value="1" <?= !empty($values['buzzer_status']) ? 'checked' : '' ?> aria-describedby="buzzer-help">
+                        <label class="form-check-label" for="buzzer-status">Enable buzzer</label>
+                    </div>
+                    <small class="form-text text-muted" id="buzzer-help">The buzzer sounds when enabled and the water level exceeds the threshold. It stays off at the exact threshold.</small>
+                </div>
+            </div>
         </div>
-        <div class="panel form-panel">
-            <h2>Alert label ranges</h2>
-            <p class="hint">The lower bound is inclusive; the upper bound is exclusive. Leave a bound empty for an open end. Ranges must not overlap.</p><?php for ($i = 0; $i < 3; $i++): ?><div class="range-block">
-                    <h3><span class="alert-label alert-<?= $i ?>">Siaga <?= $i + 1 ?></span></h3>
-                    <div class="two-columns"><label>Lower bound (≥ cm)<input type="number" step="any" name="ranges[<?= $i ?>][min_level]" value="<?= h($ranges[$i]['min_level'] ?? '') ?>" placeholder="Unbounded"></label><label>Upper bound (&lt; cm)<input type="number" step="any" name="ranges[<?= $i ?>][max_level]" value="<?= h($ranges[$i]['max_level'] ?? '') ?>" placeholder="Unbounded"></label></div>
-                </div><?php endfor ?><p class="hint">Values outside all ranges are recorded as Unclassified. Example consecutive ranges: empty–20, 20–40, 40–empty.</p>
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header"><h2 class="h5 mb-0">Alert label ranges</h2></div>
+                <div class="card-body">
+                    <p class="small text-muted">The lower bound is inclusive; the upper bound is exclusive. Leave a bound empty for an open end. Ranges must not overlap.</p>
+                    <?php for ($i = 0; $i < 3; $i++): ?>
+                        <fieldset class="border-bottom mb-3 pb-3">
+                            <legend class="h6"><span class="badge badge-<?= ['success', 'warning', 'danger'][$i] ?>">Siaga <?= $i + 1 ?></span></legend>
+                            <div class="form-row">
+                                <div class="col-sm-6 mb-2 mb-sm-0">
+                                    <label for="range-<?= $i ?>-min">Lower bound (≥ cm)</label>
+                                    <input class="form-control" id="range-<?= $i ?>-min" type="number" step="any" name="ranges[<?= $i ?>][min_level]" value="<?= h($ranges[$i]['min_level'] ?? '') ?>" placeholder="Unbounded">
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="range-<?= $i ?>-max">Upper bound (&lt; cm)</label>
+                                    <input class="form-control" id="range-<?= $i ?>-max" type="number" step="any" name="ranges[<?= $i ?>][max_level]" value="<?= h($ranges[$i]['max_level'] ?? '') ?>" placeholder="Unbounded">
+                                </div>
+                            </div>
+                        </fieldset>
+                    <?php endfor ?>
+                    <p class="small text-muted mb-0">Values outside all ranges are recorded as Unclassified. Example consecutive ranges: empty–20, 20–40, 40–empty.</p>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="form-actions"><a class="button secondary" href="/devices.php">Back</a><button class="button" type="submit">Save device</button></div>
+    <div class="d-flex justify-content-end">
+        <a class="btn btn-secondary mr-2" href="/devices.php">Back</a>
+        <button class="btn btn-primary" type="submit">Save device</button>
+    </div>
 </form>
 <?php pageEnd(); ?>

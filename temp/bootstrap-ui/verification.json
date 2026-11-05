@@ -1,0 +1,28 @@
+{
+  "fixtureOnly": true,
+  "checks": [
+    "desktop: / layout, local CSS, labels, active menu, no page overflow",
+    "desktop: /devices.php layout, local CSS, labels, active menu, no page overflow",
+    "desktop: /device-edit.php layout, local CSS, labels, active menu, no page overflow",
+    "desktop: /device-edit.php?id=1 layout, local CSS, labels, active menu, no page overflow",
+    "desktop: /logs.php layout, local CSS, labels, active menu, no page overflow",
+    "desktop: /firmwares.php layout, local CSS, labels, active menu, no page overflow",
+    "mobile: / layout, local CSS, labels, active menu, no page overflow",
+    "mobile: /devices.php layout, local CSS, labels, active menu, no page overflow",
+    "mobile: /device-edit.php layout, local CSS, labels, active menu, no page overflow",
+    "mobile: /device-edit.php?id=1 layout, local CSS, labels, active menu, no page overflow",
+    "mobile: /logs.php layout, local CSS, labels, active menu, no page overflow",
+    "mobile: /firmwares.php layout, local CSS, labels, active menu, no page overflow",
+    "log filters retained in controls and pagination links",
+    "empty state: /?empty",
+    "empty state: /logs.php?empty",
+    "empty state: /firmwares.php?empty",
+    "validation alert and preserved device input render correctly",
+    "success flash uses Bootstrap alert",
+    "dashboard polling replaces Bootstrap table and clears loading",
+    "failed refresh preserves readings and clears loading",
+    "polling recovers automatically after network failure",
+    "15-second request timeout clears loading and preserves readings",
+    "polling recovers after timeout cancellation"
+  ]
+}

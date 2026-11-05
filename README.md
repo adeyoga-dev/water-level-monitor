@@ -15,7 +15,7 @@ Proyek PHP native 8.2+ dengan MySQL/MariaDB, dashboard admin, API ESP32, riwayat
 4. Buka `http://localhost:8000`, tambahkan perangkat, lalu atur threshold dan rentang Siaga.
 5. Isi `APP_URL` dengan alamat LAN yang dapat dijangkau ESP32, misalnya `http://192.168.1.10:8000`, dan sesuaikan konfigurasi sketch.
 
-Tidak memerlukan Composer, npm, Laravel, atau URL rewrite. Bootstrap dan font dimuat dari CDN; CSS lokal tetap menyediakan tata letak dasar saat internet tidak tersedia.
+Tidak memerlukan Composer, npm, Laravel, atau URL rewrite. Seluruh halaman memakai komponen dan warna bawaan Bootstrap 4.6.2 dari `public/assets/vendor/bootstrap-4.6.2-dist/`, tanpa CSS tambahan, font eksternal, atau CDN. Menu berada di kiri pada desktop dan di atas konten pada ponsel. Aset dapat digunakan tanpa koneksi internet.
 
 ## Dokumentasi
 

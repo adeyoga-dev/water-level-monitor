@@ -6,9 +6,11 @@ $devices = deviceList();
 pageStart('Devices', 'devices');
 pageTitle('DEVICE MANAGEMENT', 'Devices', 'Manage device identities, reporting intervals, and alarm settings.');
 ?>
-<div class="panel">
-    <div class="panel-heading">
-        <h2>Device list <span class="count-pill"><?= count($devices) ?></span></h2><a class="button" href="/device-edit.php">+ Add device</a>
-    </div><?php deviceTable($devices) ?>
+<div class="card">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
+        <h2 class="h5 mb-0 mr-3">Device list <span class="badge badge-secondary"><?= count($devices) ?></span></h2>
+        <a class="btn btn-primary my-1" href="/device-edit.php">Add device</a>
+    </div>
+    <?php deviceTable($devices) ?>
 </div>
 <?php pageEnd(); ?>
