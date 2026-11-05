@@ -90,6 +90,8 @@ function validateRanges(array $ranges): array
     foreach (array_values($ranges) as $status => $range) {
         $min = ($range['min_level'] ?? '') === '' || ($range['min_level'] ?? null) === null ? null : finiteNumber($range['min_level'], 'Lower bound');
         $max = ($range['max_level'] ?? '') === '' || ($range['max_level'] ?? null) === null ? null : finiteNumber($range['max_level'], 'Upper bound');
+        if ($status === 2 && $min === null) fail('Siaga 3 requires a lower bound.');
+        if ($status === 2 && $max !== null) fail('Siaga 3 has no upper bound. Leave its upper bound empty.');
         if ($min !== null && $max !== null && $min >= $max) fail('The lower bound must be less than the upper bound.');
         $result[] = ['alarm_status' => $status, 'min_level' => $min, 'max_level' => $max];
     }
@@ -101,7 +103,8 @@ function validateRanges(array $ranges): array
 function classify(float $level, array $ranges): ?int
 {
     foreach ($ranges as $range) {
-        if (($range['min_level'] === null || $level >= (float) $range['min_level']) && ($range['max_level'] === null || $level < (float) $range['max_level'])) return (int) $range['alarm_status'];
+        // Older configurations may still have an upper bound for Siaga 3.
+        if (($range['min_level'] === null || $level >= (float) $range['min_level']) && ((int) $range['alarm_status'] === 2 || $range['max_level'] === null || $level < (float) $range['max_level'])) return (int) $range['alarm_status'];
     }
     return null;
 }

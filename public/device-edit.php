@@ -74,19 +74,21 @@ pageTitle('DEVICE SETTINGS', $id ? 'Edit device' : 'Add device', 'Set the device
             <div class="card h-100">
                 <div class="card-header"><h2 class="h5 mb-0">Alert label ranges</h2></div>
                 <div class="card-body">
-                    <p class="small text-muted">The lower bound is inclusive; the upper bound is exclusive. Leave a bound empty for an open end. Ranges must not overlap.</p>
+                    <p class="small text-muted">The lower bound is inclusive; the upper bound is exclusive. Siaga 3 uses only a required lower bound, with no upper limit. Ranges must not overlap.</p>
                     <?php for ($i = 0; $i < 3; $i++): ?>
                         <fieldset class="border-bottom mb-3 pb-3">
                             <legend class="h6"><span class="badge badge-<?= ['success', 'warning', 'danger'][$i] ?>">Siaga <?= $i + 1 ?></span></legend>
                             <div class="form-row">
-                                <div class="col-sm-6 mb-2 mb-sm-0">
+                                <div class="<?= $i === 2 ? 'col-12' : 'col-sm-6 mb-2 mb-sm-0' ?>">
                                     <label for="range-<?= $i ?>-min">Lower bound (≥ cm)</label>
-                                    <input class="form-control" id="range-<?= $i ?>-min" type="number" step="any" name="ranges[<?= $i ?>][min_level]" value="<?= h($ranges[$i]['min_level'] ?? '') ?>" placeholder="Unbounded">
+                                    <input class="form-control" id="range-<?= $i ?>-min" type="number" step="any" name="ranges[<?= $i ?>][min_level]" value="<?= h($ranges[$i]['min_level'] ?? '') ?>" placeholder="<?= $i === 2 ? 'Required' : 'Unbounded' ?>" <?= $i === 2 ? 'required' : '' ?>>
                                 </div>
-                                <div class="col-sm-6">
-                                    <label for="range-<?= $i ?>-max">Upper bound (&lt; cm)</label>
-                                    <input class="form-control" id="range-<?= $i ?>-max" type="number" step="any" name="ranges[<?= $i ?>][max_level]" value="<?= h($ranges[$i]['max_level'] ?? '') ?>" placeholder="Unbounded">
-                                </div>
+                                <?php if ($i !== 2): ?>
+                                    <div class="col-sm-6">
+                                        <label for="range-<?= $i ?>-max">Upper bound (&lt; cm)</label>
+                                        <input class="form-control" id="range-<?= $i ?>-max" type="number" step="any" name="ranges[<?= $i ?>][max_level]" value="<?= h($ranges[$i]['max_level'] ?? '') ?>" placeholder="Unbounded">
+                                    </div>
+                                <?php endif ?>
                             </div>
                         </fieldset>
                     <?php endfor ?>

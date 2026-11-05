@@ -83,7 +83,7 @@ ESP32 membandingkan versi numerik (`v1.10.0 > v1.9.0`), mengunduh dan memverifik
 
 ## Label Siaga
 
-`sensor_logs.alarm_status`: `0` ditampilkan sebagai **Siaga 1**, `1` sebagai **Siaga 2**, `2` sebagai **Siaga 3**, dan `null` sebagai **Unclassified**. Setiap rentang mencakup batas bawah dan tidak mencakup batas atas. Klasifikasi log historis tidak berubah saat pengaturan diedit.
+`sensor_logs.alarm_status`: `0` ditampilkan sebagai **Siaga 1**, `1` sebagai **Siaga 2**, `2` sebagai **Siaga 3**, dan `null` sebagai **Unclassified**. Setiap rentang mencakup batas bawah dan tidak mencakup batas atas. Siaga 3 hanya memakai batas bawah (`≥`) tanpa batas atas. Batas atas Siaga 3 pada konfigurasi lama diabaikan saat mengklasifikasikan pembacaan baru; log historis tidak diubah.
 
 ## Respons error
 
@@ -108,7 +108,7 @@ Saat jaringan gagal, contoh firmware mempertahankan konfigurasi terakhir yang va
 
 `GET /api/dashboard.php` memperbarui panel muka air setiap 5 detik setelah request sebelumnya selesai. Respons berisi HTML panel yang sudah di-escape, total perangkat, jumlah Online, dan jumlah log. Struktur field JSON tetap sama; field `html` kini merender indikator air SVG, rentang Siaga, status, dan pembacaan terakhir. Endpoint ini digunakan frontend, bukan kontrak telemetry ESP32.
 
-Grafik memakai rentang perangkat yang sedang berlaku dengan label Siaga 1, Siaga 2, dan Siaga 3. Batas bawah inklusif, batas atas eksklusif; rentang terbuka tetap didukung. Skala sumbu ditentukan otomatis dari pembacaan dan batas rentang, bukan tinggi maksimum fisik. Ketika perangkat Offline, pembacaan terakhir tetap ditampilkan dengan keterangan Offline. Tanpa pembacaan, panel menampilkan `No readings yet` tanpa mengisi grafik air. Jika request gagal atau dibatalkan setelah 15 detik, browser mempertahankan panel terakhir, mengakhiri status loading, dan mencoba kembali.
+Grafik memakai rentang perangkat yang sedang berlaku dengan label Siaga 1, Siaga 2, dan Siaga 3. Batas bawah inklusif, batas atas eksklusif; Siaga 3 selalu ditampilkan sebagai `≥ batas bawah` dan areanya memanjang sampai puncak skala tampilan. Label Siaga pada SVG memakai font 11 dan kotak 68 × 18 unit agar lebih ringkas. Skala sumbu ditentukan otomatis dari pembacaan dan batas rentang, bukan tinggi maksimum fisik. Ketika perangkat Offline, pembacaan terakhir tetap ditampilkan dengan keterangan Offline. Tanpa pembacaan, panel menampilkan `No readings yet` tanpa mengisi grafik air. Jika request gagal atau dibatalkan setelah 15 detik, browser mempertahankan panel terakhir, mengakhiri status loading, dan mencoba kembali.
 
 ## Detail perangkat dan grafik riwayat
 

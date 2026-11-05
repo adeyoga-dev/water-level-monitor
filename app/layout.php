@@ -118,6 +118,12 @@ function waterLevelPanels(array $devices, bool $detailView = false): void
     foreach ($devices as $device) {
         $level = $device['water_level'] === null ? null : (float) $device['water_level'];
         $ranges = $device['alert_ranges'] ?? [];
+        foreach ($ranges as &$range) {
+            if ((int) $range['alarm_status'] === 2) {
+                $range['max_level'] = null;
+            }
+        }
+        unset($range);
         $colors = [0 => 'success', 1 => 'warning', 2 => 'danger'];
         $statusColor = $colors[$device['alert_status'] ?? -1] ?? 'secondary';
         $bounds = [0.0, 1.0, $level ?? 0.0];
@@ -212,8 +218,8 @@ function waterLevelPanels(array $devices, bool $detailView = false): void
                         <?php foreach ($markers as $marker): ?>
                             <g class="text-<?= $colors[$marker['status']] ?>">
                                 <?php if ($marker['bottom'] > 15.01 && $marker['bottom'] < 284.99): ?><line x1="58" x2="<?= $width - 10 ?>" y1="<?= h($marker['bottom']) ?>" y2="<?= h($marker['bottom']) ?>" stroke="currentColor" stroke-dasharray="6 4" stroke-width="1.5"/><?php endif ?>
-                                <rect x="<?= $width - 112 ?>" y="<?= h($marker['label_y'] - 12) ?>" width="92" height="24" rx="4" fill="white" stroke="currentColor"/>
-                                <text class="font-weight-bold" x="<?= $width - 66 ?>" y="<?= h($marker['label_y'] + 5) ?>" fill="currentColor" text-anchor="middle" font-size="15"><?= h(alertLabel($marker['status'])) ?></text>
+                                <rect x="<?= $width - 88 ?>" y="<?= h($marker['label_y'] - 9) ?>" width="68" height="18" rx="3" fill="white" stroke="currentColor"/>
+                                <text class="font-weight-bold" x="<?= $width - 54 ?>" y="<?= h($marker['label_y'] + 4) ?>" fill="currentColor" text-anchor="middle" font-size="11"><?= h(alertLabel($marker['status'])) ?></text>
                             </g>
                         <?php endforeach ?>
                         <?php if ($level === null): ?><text class="text-secondary" x="<?= ($width + 48) / 2 ?>" y="155" fill="currentColor" text-anchor="middle" font-size="16">Awaiting sensor data</text><?php endif ?>

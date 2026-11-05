@@ -13,10 +13,15 @@ check(invalid(fn()=>finiteNumber('INF','water')) && invalid(fn()=>finiteNumber(N
 $ranges=validateRanges([['min_level'=>null,'max_level'=>20],['min_level'=>20,'max_level'=>40],['min_level'=>40,'max_level'=>null]]);
 check(classify(19.99,$ranges)===0 && classify(20,$ranges)===1 && classify(40,$ranges)===2,'alert range exact boundaries');
 check(alertLabel(0)==='Siaga 1' && alertLabel(1)==='Siaga 2' && alertLabel(2)==='Siaga 3' && alertLabel(null)==='Unclassified','Indonesian display labels preserved with English fallback');
-check(invalid(fn()=>validateRanges([['min_level'=>0,'max_level'=>20],['min_level'=>19,'max_level'=>40],['min_level'=>40,'max_level'=>50]])), 'overlap rejected');
+check(invalid(fn()=>validateRanges([['min_level'=>0,'max_level'=>20],['min_level'=>19,'max_level'=>40],['min_level'=>40,'max_level'=>null]])), 'overlap rejected');
 check(invalid(fn()=>validateRanges([['min_level'=>20,'max_level'=>20],[],[]])), 'empty interval rejected');
-$gaps=validateRanges([['min_level'=>0,'max_level'=>10],['min_level'=>20,'max_level'=>30],['min_level'=>40,'max_level'=>50]]);
+$gaps=validateRanges([['min_level'=>0,'max_level'=>10],['min_level'=>20,'max_level'=>30],['min_level'=>40,'max_level'=>null]]);
 check(classify(15,$gaps)===null,'unclassified gap');
+check(classify(39.99,$gaps)===null && classify(40,$gaps)===2 && classify(100000,$gaps)===2,'Siaga 3 includes its lower bound and has no upper limit');
+check(invalid(fn()=>validateRanges([['min_level'=>null,'max_level'=>20],['min_level'=>20,'max_level'=>40],['min_level'=>40,'max_level'=>50]])),'Siaga 3 upper bound rejected server side');
+check(invalid(fn()=>validateRanges([['min_level'=>null,'max_level'=>20],['min_level'=>20,'max_level'=>40],['min_level'=>null,'max_level'=>null]])),'Siaga 3 lower bound is required server side');
+$legacyRanges=$ranges;$legacyRanges[2]['max_level']=50;
+check(classify(40,$legacyRanges)===2 && classify(50,$legacyRanges)===2 && classify(999,$legacyRanges)===2,'legacy Siaga 3 upper bounds do not stop current classification');
 check(!alarmOn(20,20,true) && alarmOn(20.1,20,true) && !alarmOn(21,20,false) && !alarmOn(19,20,true),'buzzer strict threshold and switch');
 check(validVersion('v1.10.2')==='v1.10.2' && invalid(fn()=>validVersion('v01.2.3')),'firmware version validation');
 
@@ -189,6 +194,17 @@ try {
     } finally {
         putenv('APP_TIMEZONE='.$originalZone);
     }
+    $invalidForm=$deviceForm;$invalidForm['device_id']='ESP32-REJECTED';$invalidForm['ranges'][2]['max_level']=50;
+    $rejectedForm=request('/device-edit.php','POST',http_build_query($invalidForm),false);
+    check(str_contains($rejectedForm[1],'Siaga 3 has no upper bound.') && (int)query('SELECT COUNT(*) FROM devices WHERE device_id=?',['ESP32-REJECTED'])->fetchColumn()===0,'tampered Siaga 3 upper bound is rejected through HTTP without saving a device');
+    unset($invalidForm['ranges'][2]['max_level']);$invalidForm['ranges'][2]['min_level']='';
+    check(str_contains(request('/device-edit.php','POST',http_build_query($invalidForm),false)[1],'Siaga 3 requires a lower bound.') && (int)query('SELECT COUNT(*) FROM devices WHERE device_id=?',['ESP32-REJECTED'])->fetchColumn()===0,'missing Siaga 3 lower bound is rejected through HTTP without writes');
+    $legacyDevice=$input;$legacyDevice['device_id']='ESP32-LEGACY';$legacyId=saveDevice($legacyDevice);
+    query('UPDATE device_alert_ranges SET max_level=50 WHERE device_id=? AND alarm_status=2',[$legacyId]);
+    $legacyTelemetry=$data;$legacyTelemetry['device_id']='ESP32-LEGACY';$legacyTelemetry['water_level']=999;
+    check(request('/api/telemetry.php','POST',$legacyTelemetry)[0]===200 && (int)query('SELECT alarm_status FROM sensor_logs WHERE device_id=? ORDER BY id DESC LIMIT 1',['ESP32-LEGACY'])->fetchColumn()===2,'telemetry above an obsolete stored upper bound is recorded as Siaga 3');
+    $legacyForm=$deviceForm;$legacyForm['id']=$legacyId;$legacyForm['device_id']='ESP32-LEGACY';unset($legacyForm['ranges'][2]['max_level']);
+    check(request('/device-edit.php?id='.$legacyId,'POST',http_build_query($legacyForm),false)[0]===302 && query('SELECT max_level FROM device_alert_ranges WHERE device_id=? AND alarm_status=2',[$legacyId])->fetchColumn()===null,'saving an existing device without a Siaga 3 upper field clears its obsolete upper bound');
     echo "$checks checks passed.\n";
 } catch(Throwable $e) {
     fwrite(STDERR,(string)$e."\n");$failed=true;
