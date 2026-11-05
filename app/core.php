@@ -95,6 +95,11 @@ function validateRanges(array $ranges): array
         if ($min !== null && $max !== null && $min >= $max) fail('The lower bound must be less than the upper bound.');
         $result[] = ['alarm_status' => $status, 'min_level' => $min, 'max_level' => $max];
     }
+    for ($status = 0; $status < 2; $status++) {
+        if ($result[$status]['max_level'] !== null && $result[$status]['max_level'] === $result[$status + 1]['min_level']) {
+            fail('Siaga ' . ($status + 1) . ' upper bound must not equal Siaga ' . ($status + 2) . ' lower bound.');
+        }
+    }
     for ($a = 0; $a < 3; $a++) for ($b = $a + 1; $b < 3; $b++) {
         if (max($result[$a]['min_level'] ?? -INF, $result[$b]['min_level'] ?? -INF) < min($result[$a]['max_level'] ?? INF, $result[$b]['max_level'] ?? INF)) fail('Alert ranges must not overlap.');
     }

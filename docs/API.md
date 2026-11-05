@@ -85,6 +85,8 @@ ESP32 membandingkan versi numerik (`v1.10.0 > v1.9.0`), mengunduh dan memverifik
 
 `sensor_logs.alarm_status`: `0` ditampilkan sebagai **Siaga 1**, `1` sebagai **Siaga 2**, `2` sebagai **Siaga 3**, dan `null` sebagai **Unclassified**. Setiap rentang mencakup batas bawah dan tidak mencakup batas atas. Siaga 3 hanya memakai batas bawah (`≥`) tanpa batas atas. Batas atas Siaga 3 pada konfigurasi lama diabaikan saat mengklasifikasikan pembacaan baru; log historis tidak diubah.
 
+Saat menyimpan pengaturan perangkat, server menolak batas atas Siaga 1 yang sama dengan batas bawah Siaga 2, serta batas atas Siaga 2 yang sama dengan batas bawah Siaga 3. Nilai numerik ekuivalen seperti `20` dan `20.00` tetap dianggap sama. Rentang tetap tidak boleh tumpang tindih; celah di antaranya menghasilkan `Unclassified`. Pembacaan konfigurasi lama dan log historis tidak mengubah data secara otomatis.
+
 ## Respons error
 
 Pesan API tetap menggunakan bahasa Inggris sesuai implementasi:

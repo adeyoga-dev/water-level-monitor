@@ -10,13 +10,21 @@ function invalid(callable $fn): bool { try{$fn();return false;}catch(InvalidArgu
 $env=parseEnv("# comment\nDB_HOST = localhost\nDB_PASSWORD=\" space#pass=word \"\nEMPTY=\nSINGLE='a=b#c'\n");
 check($env['DB_PASSWORD']===' space#pass=word ' && $env['SINGLE']==='a=b#c' && $env['EMPTY']==='', 'dotenv quotes, spaces, hash, equals, empty');
 check(invalid(fn()=>finiteNumber('INF','water')) && invalid(fn()=>finiteNumber(NAN,'water')), 'non-finite sensor readings rejected');
-$ranges=validateRanges([['min_level'=>null,'max_level'=>20],['min_level'=>20,'max_level'=>40],['min_level'=>40,'max_level'=>null]]);
-check(classify(19.99,$ranges)===0 && classify(20,$ranges)===1 && classify(40,$ranges)===2,'alert range exact boundaries');
+$ranges=validateRanges([['min_level'=>null,'max_level'=>19],['min_level'=>20,'max_level'=>39],['min_level'=>40,'max_level'=>null]]);
+check(classify(18.99,$ranges)===0 && classify(19,$ranges)===null && classify(20,$ranges)===1 && classify(40,$ranges)===2,'alert range exact boundaries');
 check(alertLabel(0)==='Siaga 1' && alertLabel(1)==='Siaga 2' && alertLabel(2)==='Siaga 3' && alertLabel(null)==='Unclassified','Indonesian display labels preserved with English fallback');
-check(invalid(fn()=>validateRanges([['min_level'=>0,'max_level'=>20],['min_level'=>19,'max_level'=>40],['min_level'=>40,'max_level'=>null]])), 'overlap rejected');
+check(invalid(fn()=>validateRanges([['min_level'=>0,'max_level'=>20],['min_level'=>19,'max_level'=>40],['min_level'=>41,'max_level'=>null]])), 'overlap rejected');
 check(invalid(fn()=>validateRanges([['min_level'=>20,'max_level'=>20],[],[]])), 'empty interval rejected');
 $gaps=validateRanges([['min_level'=>0,'max_level'=>10],['min_level'=>20,'max_level'=>30],['min_level'=>40,'max_level'=>null]]);
 check(classify(15,$gaps)===null,'unclassified gap');
+$equalFirst=$ranges;$equalFirst[0]['max_level']='20.00';
+check(invalid(fn()=>validateRanges($equalFirst)),'Siaga 1 upper and Siaga 2 lower cannot be numerically equal');
+$equalSecond=$ranges;$equalSecond[1]['max_level']='40.0';
+check(invalid(fn()=>validateRanges($equalSecond)),'Siaga 2 upper and Siaga 3 lower cannot be numerically equal');
+$zeroBoundary=$ranges;$zeroBoundary[0]['max_level']=0;$zeroBoundary[1]['min_level']='0.00';
+check(invalid(fn()=>validateRanges($zeroBoundary)),'equal zero boundaries are rejected rather than treated as empty');
+$decimalGap=$ranges;$decimalGap[0]['max_level']='19.99';
+check(validateRanges($decimalGap)[0]['max_level']===19.99,'distinct decimal boundaries remain valid without enforcing an integer gap');
 check(classify(39.99,$gaps)===null && classify(40,$gaps)===2 && classify(100000,$gaps)===2,'Siaga 3 includes its lower bound and has no upper limit');
 check(invalid(fn()=>validateRanges([['min_level'=>null,'max_level'=>20],['min_level'=>20,'max_level'=>40],['min_level'=>40,'max_level'=>50]])),'Siaga 3 upper bound rejected server side');
 check(invalid(fn()=>validateRanges([['min_level'=>null,'max_level'=>20],['min_level'=>20,'max_level'=>40],['min_level'=>null,'max_level'=>null]])),'Siaga 3 lower bound is required server side');
@@ -205,6 +213,17 @@ try {
     check(request('/api/telemetry.php','POST',$legacyTelemetry)[0]===200 && (int)query('SELECT alarm_status FROM sensor_logs WHERE device_id=? ORDER BY id DESC LIMIT 1',['ESP32-LEGACY'])->fetchColumn()===2,'telemetry above an obsolete stored upper bound is recorded as Siaga 3');
     $legacyForm=$deviceForm;$legacyForm['id']=$legacyId;$legacyForm['device_id']='ESP32-LEGACY';unset($legacyForm['ranges'][2]['max_level']);
     check(request('/device-edit.php?id='.$legacyId,'POST',http_build_query($legacyForm),false)[0]===302 && query('SELECT max_level FROM device_alert_ranges WHERE device_id=? AND alarm_status=2',[$legacyId])->fetchColumn()===null,'saving an existing device without a Siaga 3 upper field clears its obsolete upper bound');
+    foreach ([0=>'Siaga 1 upper bound must not equal Siaga 2 lower bound.',1=>'Siaga 2 upper bound must not equal Siaga 3 lower bound.'] as $status=>$message) {
+        $equalForm=$deviceForm;$equalForm['device_id']='ESP32-EQUAL-'.$status;
+        $equalForm['ranges'][$status]['max_level']=(string)$equalForm['ranges'][$status+1]['min_level'].'.00';
+        $rejected=request('/device-edit.php','POST',http_build_query($equalForm),false);
+        check(str_contains($rejected[1],$message) && (int)query('SELECT COUNT(*) FROM devices WHERE device_id=?',[$equalForm['device_id']])->fetchColumn()===0,'equal adjacent boundary rejected through HTTP without creating device: '.$status);
+        $beforeDevice=query('SELECT * FROM devices WHERE id=?',[$legacyId])->fetch();
+        $beforeRanges=query('SELECT * FROM device_alert_ranges WHERE device_id=? ORDER BY alarm_status',[$legacyId])->fetchAll();
+        $equalForm['id']=$legacyId;$equalForm['device_id']='ESP32-LEGACY';$equalForm['alarm_threshold']=999;
+        $rejected=request('/device-edit.php?id='.$legacyId,'POST',http_build_query($equalForm),false);
+        check(str_contains($rejected[1],$message) && query('SELECT * FROM devices WHERE id=?',[$legacyId])->fetch()===$beforeDevice && query('SELECT * FROM device_alert_ranges WHERE device_id=? ORDER BY alarm_status',[$legacyId])->fetchAll()===$beforeRanges,'equal adjacent boundary edit retains device settings and ranges: '.$status);
+    }
     echo "$checks checks passed.\n";
 } catch(Throwable $e) {
     fwrite(STDERR,(string)$e."\n");$failed=true;

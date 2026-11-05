@@ -109,13 +109,15 @@ Batas aplikasi tetap 16 MB meskipun limit PHP lebih tinggi. File disimpan sebaga
 
 | Label   | Batas bawah | Batas atas |
 | ------- | ----------: | ---------: |
-| Siaga 1 |      kosong |         20 |
-| Siaga 2 |          20 |         40 |
+| Siaga 1 |      kosong |         19 |
+| Siaga 2 |          20 |         39 |
 | Siaga 3 |          40 |     kosong |
 
-Pembacaan `20` masuk Siaga 2; `40` masuk Siaga 3. Batas bawah termasuk rentang, sedangkan batas atas tidak termasuk. Siaga 1 dan 2 boleh memiliki sisi terbuka. **Siaga 3 wajib memiliki batas bawah dan selalu tanpa batas atas**: misalnya `≥ 40 cm`, sehingga `40`, `50`, maupun `999` tetap Siaga 3. Form Siaga 3 hanya menyediakan batas bawah; server menolak batas atas yang dikirim manual. Ketiga rentang tidak boleh tumpang tindih. Celah diperbolehkan dan menghasilkan label **Unclassified**.
+Pembacaan `20` masuk Siaga 2; `40` masuk Siaga 3. Batas bawah termasuk rentang, sedangkan batas atas tidak termasuk. Siaga 1 dan 2 boleh memiliki sisi terbuka. **Siaga 3 wajib memiliki batas bawah dan selalu tanpa batas atas**: misalnya `≥ 40 cm`, sehingga `40`, `50`, maupun `999` tetap Siaga 3. Form Siaga 3 hanya menyediakan batas bawah; server menolak batas atas yang dikirim manual. Ketiga rentang tidak boleh tumpang tindih. Batas atas Siaga 1 tidak boleh sama dengan batas bawah Siaga 2; batas atas Siaga 2 tidak boleh sama dengan batas bawah Siaga 3. Perbandingan memakai nilai numerik, sehingga `20` dan `20.00` dianggap sama. Tidak ada minimum selisih satu cm; desimal yang berbeda tetap didukung. Celah menghasilkan label **Unclassified**; pada contoh di atas, `19 ≤ air < 20` dan `39 ≤ air < 40` tidak masuk rentang Siaga.
 
 Pada konfigurasi lama, batas atas Siaga 3 diabaikan untuk klasifikasi pembacaan baru dan tampilan indikator. Menyimpan ulang pengaturan perangkat akan menyimpan batas atas tersebut sebagai `NULL`. Log historis tidak diubah dan tidak diperlukan migrasi database.
+
+Konfigurasi lama dengan batas antar-Siaga yang sama tetap dibaca tanpa mengubah data, tetapi harus diperbaiki sebelum pengaturan dapat disimpan ulang. Kegagalan validasi mempertahankan input form dan tidak mengubah pengaturan/rentang perangkat.
 
 Perangkat baru tetap Offline sampai POST telemetry pertama berhasil. GET konfigurasi tidak mengubah status. Device ID tidak dapat diedit; buat perangkat baru jika identitas berubah. Penghapusan perangkat/firmware tidak disediakan agar riwayat dan URL OTA tetap tersedia.
 

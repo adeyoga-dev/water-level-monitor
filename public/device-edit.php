@@ -74,7 +74,7 @@ pageTitle('DEVICE SETTINGS', $id ? 'Edit device' : 'Add device', 'Set the device
             <div class="card h-100">
                 <div class="card-header"><h2 class="h5 mb-0">Alert label ranges</h2></div>
                 <div class="card-body">
-                    <p class="small text-muted">The lower bound is inclusive; the upper bound is exclusive. Siaga 3 uses only a required lower bound, with no upper limit. Ranges must not overlap.</p>
+                    <p class="small text-muted">The lower bound is inclusive; the upper bound is exclusive. Siaga 3 uses only a required lower bound, with no upper limit. Ranges must not overlap. Siaga 1 upper bound must differ from Siaga 2 lower bound; Siaga 2 upper bound must differ from Siaga 3 lower bound.</p>
                     <?php for ($i = 0; $i < 3; $i++): ?>
                         <fieldset class="border-bottom mb-3 pb-3">
                             <legend class="h6"><span class="badge badge-<?= ['success', 'warning', 'danger'][$i] ?>">Siaga <?= $i + 1 ?></span></legend>
@@ -92,7 +92,7 @@ pageTitle('DEVICE SETTINGS', $id ? 'Edit device' : 'Add device', 'Set the device
                             </div>
                         </fieldset>
                     <?php endfor ?>
-                    <p class="small text-muted mb-0">Values outside all ranges are recorded as Unclassified. Example consecutive ranges: empty–20, 20–40, 40–empty.</p>
+                    <p class="small text-muted mb-0">Values outside all ranges are recorded as Unclassified. Example ranges: empty–19, 20–39, 40 and above.</p>
                 </div>
             </div>
         </div>
