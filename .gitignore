@@ -1,0 +1,6 @@
+.env
+storage/firmware/*
+!storage/firmware/.gitkeep
+storage/logs/*
+!storage/logs/.gitkeep
+tests/.tmp*
