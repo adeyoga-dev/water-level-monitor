@@ -206,6 +206,9 @@ function waterLevelPanels(array $devices, bool $detailView = false): void
                                 <stop class="text-info" offset="0" stop-color="currentColor"/>
                                 <stop class="text-primary" offset="1" stop-color="currentColor"/>
                             </linearGradient>
+                            <clipPath id="<?= $graphicId ?>-surface-clip">
+                                <rect x="58" y="15" width="<?= $width - 68 ?>" height="270"/>
+                            </clipPath>
                         </defs>
                         <rect class="text-light" width="<?= $width ?>" height="300" fill="currentColor"/>
                         <?php foreach ($markers as $marker): ?>
@@ -213,7 +216,12 @@ function waterLevelPanels(array $devices, bool $detailView = false): void
                         <?php endforeach ?>
                         <?php if ($waterY !== null): ?>
                             <rect x="58" y="<?= h($waterY) ?>" width="<?= $width - 68 ?>" height="<?= h(285 - $waterY) ?>" fill="url(#<?= $graphicId ?>-fill)"/>
-                            <line class="text-info" x1="58" x2="<?= $width - 10 ?>" y1="<?= h($waterY) ?>" y2="<?= h($waterY) ?>" stroke="currentColor" stroke-width="3"/>
+                            <line class="flow-water-surface-static text-info" x1="58" x2="<?= $width - 10 ?>" y1="<?= h($waterY) ?>" y2="<?= h($waterY) ?>" stroke="currentColor" stroke-width="3"/>
+                            <g clip-path="url(#<?= $graphicId ?>-surface-clip)" aria-hidden="true">
+                                <svg x="58" y="<?= h($waterY - 8) ?>" width="<?= $width - 68 ?>" height="16" overflow="hidden">
+                                    <path class="flow-water-wave" d="M-160 8 Q-120 0 -80 8 T0 8 Q40 0 80 8 T160 8 Q200 0 240 8 T320 8 Q360 0 400 8 T480 8 Q520 0 560 8 T640 8 Q680 0 720 8 T800 8 Q840 0 880 8 T960 8 Q1000 0 1040 8 T1120 8"/>
+                                </svg>
+                            </g>
                         <?php endif ?>
                         <?php for ($tick = $minimum, $i = 0; $tick <= $maximum + $step / 10 && $i < 12; $tick += $step, $i++): ?>
                             <?php $y = 285 - (($tick - $minimum) / $span * 270); ?>

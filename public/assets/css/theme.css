@@ -193,6 +193,22 @@ label, legend { font-weight: var(--weight-medium); }
 .alert-danger { border-left: var(--space-1) solid var(--accent-red); }
 .alert-success { border-left: var(--space-1) solid var(--accent-green); }
 .flow-water-chart { border-radius: var(--radius-md) !important; }
+.flow-water-surface-static { display: none; }
+.flow-water-wave {
+  fill: none;
+  stroke: var(--accent-blue);
+  stroke-width: var(--water-wave-stroke);
+  animation: flow-water-wave var(--water-wave-duration) linear infinite;
+  pointer-events: none;
+}
+@keyframes flow-water-wave {
+  from { transform: translateX(0); }
+  to { transform: translateX(var(--water-wave-distance)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-water-wave { animation: none; display: none; }
+  .flow-water-surface-static { display: inline; }
+}
 .flow-water-chart .text-light { color: var(--canvas) !important; }
 .flow-water-chart .text-info { color: var(--accent-blue) !important; }
 .flow-water-chart .text-primary { color: var(--accent-blue-deep) !important; }

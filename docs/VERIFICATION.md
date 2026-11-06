@@ -2,6 +2,8 @@
 
 ## Tema Flow / Webflow — 6 November 2026
 
+Pembaruan animasi permukaan air: garis biru pada panel Dashboard/detail menggunakan gelombang SVG dengan animasi CSS, dibatasi area plot. Tinggi acuan, skala, pembacaan sensor, dan logika JavaScript tidak berubah. Mode `prefers-reduced-motion` menampilkan garis datar semula; perangkat tanpa pembacaan tidak menampilkan gelombang. Verifikasi ulang lulus 111 pemeriksaan logika/API dan 54 pemeriksaan browser, termasuk gerakan gelombang serta reduced motion pada desktop/mobile. Screenshot gelombang desktop diperiksa.
+
 - Referensi: `docs/DESIGN.md` dan spesifikasi UI pengguna. Tokens warna, tipografi, spacing, radius, dan shadow berada di `public/assets/css/design-tokens.css`; override Bootstrap berada di `public/assets/css/theme.css`. Vendor Bootstrap tidak diedit.
 - Layout bersama menerapkan tema ke Dashboard, Devices, Sensor logs, OTA firmware, form administrasi device, dan detail/history. Posisi komponen desktop dipertahankan; stat card menjadi 1/2/4 kolom pada mobile/tablet/desktop. Menu mobile memakai disclosure HTML native yang dapat dioperasikan dengan keyboard.
 - Inter dan Inconsolata disimpan lokal beserta lisensi SIL OFL. Tidak diperlukan build frontend atau migrasi database.
