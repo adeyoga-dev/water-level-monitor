@@ -32,6 +32,12 @@ $legacyRanges=$ranges;$legacyRanges[2]['max_level']=50;
 check(classify(40,$legacyRanges)===2 && classify(50,$legacyRanges)===2 && classify(999,$legacyRanges)===2,'legacy Siaga 3 upper bounds do not stop current classification');
 check(!alarmOn(20,20,true) && alarmOn(20.1,20,true) && !alarmOn(21,20,false) && !alarmOn(19,20,true),'buzzer strict threshold and switch');
 check(validVersion('v1.10.2')==='v1.10.2' && invalid(fn()=>validVersion('v01.2.3')),'firmware version validation');
+check(parseCoordinates(' -7.566712, 110.833458 ') === [-7.566712,110.833458], 'Google Maps decimal coordinate pair is parsed in latitude longitude order');
+check(parseCoordinates('0, 0') === [0.0,0.0] && parseCoordinates('90,-180') === [90.0,-180.0], 'zero and boundary coordinates are valid');
+check(parseCoordinates('  ') === [null,null] && parseCoordinates('-7.123456789,110.123456789') === [-7.1234568,110.1234568], 'empty coordinates clear location and precision matches database');
+foreach (['91,110','-91,110','0,181','0,-181','NaN,110','INF,110','-7','-7,110,12','https://maps.app.goo.gl/example','<script>alert(1)</script>','-7,5,110,5',[],null] as $badCoordinates) {
+    check(invalid(fn()=>parseCoordinates($badCoordinates)), 'invalid coordinate value rejected: '.json_encode($badCoordinates));
+}
 
 if (!in_array('--integration',$argv,true)) { echo "$checks checks passed. Run --integration for real MySQL/HTTP tests.\n"; exit; }
 $server=null;$pdo=null;$testDatabase='water_level_test_'.bin2hex(random_bytes(6));
@@ -42,6 +48,14 @@ try {
     $schema=file_get_contents(dirname(__DIR__).'/database/schema.sql');
     $schema=preg_replace('/^CREATE DATABASE[^;]+;\s*USE[^;]+;/','',$schema);
     foreach(explode(';',$schema) as $statement) if(trim($statement)!=='') $pdo->exec($statement);
+    $pdo->exec('ALTER TABLE devices DROP COLUMN latitude, DROP COLUMN longitude');
+    $pdo->exec("INSERT INTO devices(device_id,alarm_threshold,created_at,updated_at) VALUES('MIGRATION-EXISTING',20,'2026-01-01 00:00:00','2026-01-01 00:00:00')");
+    $legacyLocationRow=$pdo->query("SELECT * FROM devices WHERE device_id='MIGRATION-EXISTING'")->fetch(PDO::FETCH_ASSOC);
+    $locationMigration=file_get_contents(dirname(__DIR__).'/database/migrations/002_device_coordinates.sql');
+    foreach(explode(';',$locationMigration) as $statement) if(trim($statement)!=='') $pdo->exec($statement);
+    check(count($pdo->query("SHOW COLUMNS FROM devices WHERE Field IN ('latitude','longitude')")->fetchAll())===2, 'coordinate migration upgrades an existing schema');
+    $migratedLocationRow=$pdo->query("SELECT * FROM devices WHERE device_id='MIGRATION-EXISTING'")->fetch(PDO::FETCH_ASSOC);
+    check($migratedLocationRow['latitude']===null && $migratedLocationRow['longitude']===null && array_diff_key($migratedLocationRow,['latitude'=>true,'longitude'=>true])===$legacyLocationRow,'coordinate migration preserves existing device data with no invented location');
     putenv('DB_DATABASE='.$testDatabase);
     putenv('APP_URL=http://127.0.0.1:18765');
     $input=['device_id'=>'ESP32-TEST','alarm_threshold'=>'20','hours'=>'0','minutes'=>'1','seconds'=>'0','ranges'=>$ranges];
@@ -91,13 +105,42 @@ try {
     $pdo->exec('DROP TRIGGER test_log_failure');
     query('UPDATE devices SET last_seen_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 181 SECOND) WHERE id=?',[$id]);
     markOffline();check((int)query('SELECT device_status FROM devices WHERE id=?',[$id])->fetchColumn()===0,'offline timeout');
-    foreach(['/','/devices.php','/device-edit.php?id='.$id,'/logs.php?device_id=ESP32-TEST&alarm_status=1','/firmwares.php','/api/dashboard.php'] as $path) check(request($path)[0]===200,'page '.$path);
+    foreach(['/','/devices.php','/maps.php','/device-edit.php?id='.$id,'/logs.php?device_id=ESP32-TEST&alarm_status=1','/firmwares.php','/api/dashboard.php'] as $path) check(request($path)[0]===200,'page '.$path);
     check(request('/logs.php?from=2026-02-30')[0]===200,'invalid filter handled');
     [$code,$html]=request('/firmwares.php');preg_match('/name="csrf" value="([a-f0-9]+)"/',$html,$match);$token=$match[1]??'';
     check($token!=='','CSRF token provided');
     [$code,$html]=request('/device-edit.php');preg_match('/name="csrf" value="([a-f0-9]+)"/',$html,$deviceToken);
     $deviceForm=['csrf'=>$deviceToken[1],'device_id'=>'ESP32-FORM','alarm_threshold'=>20,'hours'=>0,'minutes'=>0,'seconds'=>30,'ranges'=>$ranges];
     check(request('/device-edit.php','POST',http_build_query($deviceForm),false)[0]===302,'device created through HTTP form');
+    $locationForm=$deviceForm;$locationForm['device_id']='ESP32-MAP';$locationForm['coordinates']='-7.566712, 110.833458';
+    $logsBeforeLocation=(int)query('SELECT COUNT(*) FROM sensor_logs')->fetchColumn();
+    check(request('/device-edit.php','POST',http_build_query($locationForm),false)[0]===302,'device created with coordinates through master form');
+    $locationId=(int)query('SELECT id FROM devices WHERE device_id=?',['ESP32-MAP'])->fetchColumn();
+    check(query('SELECT latitude,longitude FROM devices WHERE id=?',[$locationId])->fetch()===['latitude'=>'-7.5667120','longitude'=>'110.8334580'],'latitude and longitude stored on device');
+    $mapHtml=request('/maps.php')[1];preg_match('/<script id="map-data" type="application\/json">(.*?)<\/script>/s',$mapHtml,$mapMatch);
+    $mapPoints=json_decode($mapMatch[1]??'',true);
+    check(count($mapPoints)===1 && $mapPoints[0]['device_id']==='ESP32-MAP' && $mapPoints[0]['latitude']===-7.566712 && str_contains($mapHtml,'leaflet-1.9.4/leaflet.js'),'map contains only devices with coordinates and uses local Leaflet');
+    $locationForm['id']=$id;$locationForm['coordinates']='0, 0';
+    $unrelatedDevice=query('SELECT * FROM devices WHERE id=?',[$id])->fetch();
+    check(request('/device-edit.php?id='.$locationId,'POST',http_build_query($locationForm),false)[0]===302 && query('SELECT * FROM devices WHERE id=?',[$id])->fetch()===$unrelatedDevice,'posted ID cannot redirect a location update away from the URL device');
+    check(query('SELECT latitude,longitude FROM devices WHERE id=?',[$locationId])->fetch()===['latitude'=>'0.0000000','longitude'=>'0.0000000'],'location replaces previous coordinates and accepts zero');
+    check(str_contains(request('/maps.php')[1],'"latitude":0,"longitude":0'),'zero coordinates are included in map data');
+    $beforeInvalidLocation=query('SELECT * FROM devices WHERE id=?',[$locationId])->fetch();
+    $locationForm['coordinates']='91, 110';
+    $invalidLocationResponse=request('/device-edit.php?id='.$locationId,'POST',http_build_query($locationForm),false);
+    check($invalidLocationResponse[0]===422 && str_contains($invalidLocationResponse[1],'value="91, 110"') && query('SELECT * FROM devices WHERE id=?',[$locationId])->fetch()===$beforeInvalidLocation,'invalid location returns 422 and retains draft without writes');
+    $locationForm['coordinates']='-7,110';$locationForm['csrf']='bad';
+    check(request('/device-edit.php?id='.$locationId,'POST',http_build_query($locationForm),false)[0]===422 && query('SELECT * FROM devices WHERE id=?',[$locationId])->fetch()===$beforeInvalidLocation,'location form rejects invalid CSRF without writes');
+    $locationForm['csrf']=$deviceToken[1];$locationForm['coordinates']='';
+    check(request('/device-edit.php?id='.$locationId,'POST',http_build_query($locationForm),false)[0]===302 && query('SELECT latitude,longitude FROM devices WHERE id=?',[$locationId])->fetch()===['latitude'=>null,'longitude'=>null],'blank coordinates remove the current location');
+    check((int)query('SELECT COUNT(*) FROM sensor_logs')->fetchColumn()===$logsBeforeLocation && count(query('SHOW TABLES')->fetchAll())===4,'location creates updates and removals do not create sensor or location history');
+    $beforeRollbackLocation=query('SELECT * FROM devices WHERE id=?',[$locationId])->fetch();
+    $beforeRollbackRanges=query('SELECT * FROM device_alert_ranges WHERE device_id=? ORDER BY alarm_status',[$locationId])->fetchAll();
+    $pdo->exec("CREATE TRIGGER test_location_range_failure BEFORE INSERT ON device_alert_ranges FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='intentional location test failure'");
+    $rollbackInput=$locationForm;$rollbackInput['id']=$locationId;$rollbackInput['coordinates']='-6.2,106.8';$locationFailed=false;
+    try { saveDevice($rollbackInput); } catch (PDOException $exception) { $locationFailed=true; }
+    $pdo->exec('DROP TRIGGER test_location_range_failure');
+    check($locationFailed && query('SELECT * FROM devices WHERE id=?',[$locationId])->fetch()===$beforeRollbackLocation && query('SELECT * FROM device_alert_ranges WHERE device_id=? ORDER BY alarm_status',[$locationId])->fetchAll()===$beforeRollbackRanges,'location update rolls back with device settings if saving alert ranges fails');
     $binary=dirname(__DIR__).'/tests/.tmp-firmware.bin';file_put_contents($binary,"\xE9".random_bytes(2047));
     $form=['csrf'=>$token,'version'=>'v1.1.0','description'=>'Test <script>unsafe</script>','firmware'=>new CURLFile($binary,'application/octet-stream','update.bin')];
     check(request('/firmwares.php','POST',$form,false)[0]===302,'multipart firmware uploaded');

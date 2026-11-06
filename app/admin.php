@@ -2,6 +2,27 @@
 
 declare(strict_types=1);
 
+/** @return array{0: ?float, 1: ?float} Latitude and longitude, or an empty location. */
+function parseCoordinates(mixed $value): array
+{
+    if (!is_string($value) || strlen($value) > 100) {
+        fail('Coordinates must be a latitude, longitude pair, for example -7.566712, 110.833458.');
+    }
+    $value = trim($value);
+    if ($value === '') {
+        return [null, null];
+    }
+    if (!preg_match('/^([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))$/D', $value, $matches)) {
+        fail('Paste numeric latitude, longitude coordinates, not a Google Maps share link.');
+    }
+    $latitude = finiteNumber($matches[1], 'Latitude');
+    $longitude = finiteNumber($matches[2], 'Longitude');
+    if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
+        fail('Latitude must be between -90 and 90; longitude must be between -180 and 180.');
+    }
+    return [round($latitude, 7), round($longitude, 7)];
+}
+
 function saveDevice(array $input): int
 {
     $id = filter_var($input['id'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
@@ -19,6 +40,7 @@ function saveDevice(array $input): int
     if ($interval < 1) fail('The minimum interval is 1 second.');
     $ranges = validateRanges($input['ranges'] ?? []);
     $enabled = isset($input['buzzer_status']) ? 1 : 0;
+    $coordinates = array_key_exists('coordinates', $input) ? parseCoordinates($input['coordinates']) : null;
     db()->beginTransaction();
     try {
         // Serialize with global firmware publication, including devices created during an upload.
@@ -29,10 +51,12 @@ function saveDevice(array $input): int
             $existing = query('SELECT * FROM devices WHERE id=? FOR UPDATE', [$id])->fetch();
             if (!$existing) fail('Device not found.');
             if ($existing['device_id'] !== $identifier) fail('Device ID cannot be changed.');
-            query('UPDATE devices SET update_interval=?,alarm_threshold=?,buzzer_status=?,updated_at=? WHERE id=?', [$interval, $threshold, $enabled, $time, $id]);
+            $coordinates ??= [$existing['latitude'], $existing['longitude']];
+            query('UPDATE devices SET update_interval=?,alarm_threshold=?,buzzer_status=?,latitude=?,longitude=?,updated_at=? WHERE id=?', [$interval, $threshold, $enabled, $coordinates[0], $coordinates[1], $time, $id]);
             query('DELETE FROM device_alert_ranges WHERE device_id=?', [$id]);
         } else {
-            query('INSERT INTO devices(device_id,update_interval,alarm_threshold,buzzer_status,current_firmware,created_at,updated_at) VALUES(?,?,?,?,?,?,?)', [$identifier, $interval, $threshold, $enabled, $firmware ? $firmware['version'] : null, $time, $time]);
+            $coordinates ??= [null, null];
+            query('INSERT INTO devices(device_id,update_interval,alarm_threshold,buzzer_status,latitude,longitude,current_firmware,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)', [$identifier, $interval, $threshold, $enabled, $coordinates[0], $coordinates[1], $firmware ? $firmware['version'] : null, $time, $time]);
             $id = (int) db()->lastInsertId();
         }
         foreach ($ranges as $range) query('INSERT INTO device_alert_ranges(device_id,alarm_status,min_level,max_level) VALUES(?,?,?,?)', [$id, $range['alarm_status'], $range['min_level'], $range['max_level']]);

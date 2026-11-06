@@ -14,6 +14,7 @@ function pageStart(string $title, string $active): void
         <title><?= h($title) ?> · Flow</title>
         <link rel="icon" type="image/svg+xml" sizes="any" href="/assets/images/flow-mark.svg">
         <link rel="stylesheet" href="/assets/vendor/bootstrap-4.6.2-dist/css/bootstrap.min.css">
+        <?php if ($active === 'maps'): ?><link rel="stylesheet" href="/assets/vendor/leaflet-1.9.4/leaflet.css"><?php endif ?>
         <link rel="stylesheet" href="/assets/css/design-tokens.css">
         <link rel="stylesheet" href="/assets/css/theme.css">
     </head>
@@ -30,7 +31,7 @@ function pageStart(string $title, string $active): void
                     <details class="flow-navigation">
                         <summary><span aria-hidden="true">☰</span> Menu</summary>
                         <nav class="nav flex-column nav-pills" aria-label="Main navigation">
-                            <?php foreach (['dashboard' => ['/', 'Dashboard'], 'devices' => ['/devices.php', 'Devices'], 'logs' => ['/logs.php', 'Sensor logs'], 'firmwares' => ['/firmwares.php', 'OTA firmware']] as $key => $item): ?>
+                            <?php foreach (['dashboard' => ['/', 'Dashboard'], 'devices' => ['/devices.php', 'Devices'], 'maps' => ['/maps.php', 'Maps'], 'logs' => ['/logs.php', 'Sensor logs'], 'firmwares' => ['/firmwares.php', 'OTA firmware']] as $key => $item): ?>
                                 <a class="nav-link mb-1<?= $active === $key ? ' active' : '' ?>" href="<?= $item[0] ?>" <?= $active === $key ? ' aria-current="page"' : '' ?>><?= $item[1] ?></a>
                             <?php endforeach ?>
                         </nav>

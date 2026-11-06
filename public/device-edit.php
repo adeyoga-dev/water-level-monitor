@@ -15,15 +15,17 @@ if (!$device) {
 }
 $ranges = $id ? query('SELECT * FROM device_alert_ranges WHERE device_id=? ORDER BY alarm_status', [$id])->fetchAll() : array_fill(0, 3, ['min_level' => '', 'max_level' => '']);
 $values = $device + ['hours' => intdiv((int)$device['update_interval'], 3600), 'minutes' => intdiv((int)$device['update_interval'] % 3600, 60), 'seconds' => (int)$device['update_interval'] % 60];
+$values['coordinates'] = ($device['latitude'] ?? null) !== null && ($device['longitude'] ?? null) !== null ? $device['latitude'] . ', ' . $device['longitude'] : '';
 $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         checkCsrf();
-        saveDevice($_POST + ['id' => $id]);
+        saveDevice(array_replace($_POST, ['id' => $id]));
         $_SESSION['flash'] = 'Device settings saved successfully.';
         header('Location: /devices.php');
         exit;
     } catch (InvalidArgumentException $e) {
+        http_response_code(422);
         $error = $e->getMessage();
         $values = $_POST;
         $ranges = $_POST['ranges'] ?? $ranges;
@@ -39,12 +41,20 @@ pageTitle('DEVICE SETTINGS', $id ? 'Edit device' : 'Add device', 'Set the device
     <div class="row">
         <div class="col-lg-6 mb-4">
             <div class="card h-100">
-                <div class="card-header"><h2 class="h5 mb-0">Device configuration</h2></div>
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Device configuration</h2>
+                </div>
                 <div class="card-body">
                     <div class="form-group">
                         <label for="device-id">Device ID</label>
                         <input class="form-control" id="device-id" name="device_id" maxlength="64" pattern="[A-Za-z0-9_-]+" required value="<?= h($values['device_id'] ?? '') ?>" <?= $id ? 'readonly' : '' ?> placeholder="ESP32-001" aria-describedby="device-id-help">
                         <small class="form-text text-muted" id="device-id-help">Must match the ID in the ESP32 firmware exactly. Cannot be changed after creation.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="device-coordinates">Location coordinates</label>
+                        <input class="form-control" id="device-coordinates" name="coordinates" maxlength="100" placeholder="-7.566712, 110.833458" value="<?= h(is_string($values['coordinates'] ?? '') ? ($values['coordinates'] ?? '') : '') ?>" aria-describedby="coordinates-help" autocomplete="off" spellcheck="false">
+                        <small class="form-text text-muted" id="coordinates-help">Paste latitude, longitude from Google Maps. Use decimal points and a comma between the numbers, not a share link. Leave blank to remove the location. Only the current location is saved.</small>
+                        <a class="small d-inline-block mt-2" href="/maps.php">View device locations →</a>
                     </div>
                     <fieldset class="form-group" aria-describedby="interval-help">
                         <legend class="h6">Reporting interval</legend>
@@ -72,7 +82,9 @@ pageTitle('DEVICE SETTINGS', $id ? 'Edit device' : 'Add device', 'Set the device
         </div>
         <div class="col-lg-6 mb-4">
             <div class="card h-100">
-                <div class="card-header"><h2 class="h5 mb-0">Alert label ranges</h2></div>
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Alert label ranges</h2>
+                </div>
                 <div class="card-body">
                     <p class="small text-muted">The lower bound is inclusive; the upper bound is exclusive. Siaga 3 uses only a required lower bound, with no upper limit. Ranges must not overlap. Siaga 1 upper bound must differ from Siaga 2 lower bound; Siaga 2 upper bound must differ from Siaga 3 lower bound.</p>
                     <?php for ($i = 0; $i < 3; $i++): ?>
@@ -102,4 +114,6 @@ pageTitle('DEVICE SETTINGS', $id ? 'Edit device' : 'Add device', 'Set the device
         <button class="btn btn-primary" type="submit">Save device</button>
     </div>
 </form>
+<script src="/assets/device-edit.js" defer></script>
+<script src="/assets/plus-code-to-coordinate.js" defer></script>
 <?php pageEnd(); ?>

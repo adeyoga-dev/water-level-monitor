@@ -51,6 +51,10 @@
   --icon-size: 48px;
   --brand-mark-size: 36px;
   --brand-mark-footer-size: 24px;
+  --map-height: 520px;
+  --map-mobile-height: 360px;
+  --map-marker-size: 44px;
+  --map-pin-size: 28px;
   --font-sans: Inter, Arial, sans-serif;
   --font-mono: Inconsolata, "DM Mono", monospace;
   --font-xs: 12px;

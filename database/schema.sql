@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS devices (
     device_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL UNIQUE,
     device_status TINYINT UNSIGNED NOT NULL DEFAULT 0,
     water_level DOUBLE NULL,
+    latitude DECIMAL(10,7) NULL,
+    longitude DECIMAL(11,7) NULL,
     update_interval INT UNSIGNED NOT NULL DEFAULT 60,
     alarm_threshold DOUBLE NOT NULL,
     buzzer_status TINYINT UNSIGNED NOT NULL DEFAULT 0,

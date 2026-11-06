@@ -34,9 +34,25 @@ Akun aplikasi memerlukan izin `SELECT`, `INSERT`, `UPDATE`, dan `DELETE`. Pembua
 
 ### Instalasi yang sudah ada
 
+Fitur Maps membutuhkan kolom `devices.latitude DECIMAL(10,7) NULL` dan `devices.longitude DECIMAL(11,7) NULL`. Untuk instalasi sebelum fitur ini, pilih database aplikasi lalu jalankan `database/migrations/002_device_coordinates.sql` sekali setelah persetujuan perubahan schema. Migrasi hanya menambah kolom; lokasi perangkat lama tetap kosong. Instalasi baru sudah mendapatkan kolom ini melalui `schema.sql`. Jalankan migrasi sebelum menyimpan perangkat dengan source baru.
+
 Schema sebelumnya memakai nama tabel rentang dalam bahasa Indonesia. Jika sudah terpasang, pilih database aplikasi dan jalankan `database/migrations/001_english_alert_names.sql` sekali. Query mengganti nama tabel menjadi `device_alert_ranges` dan indeks unik menjadi `device_alert`, dengan mempertahankan baris serta hubungan foreign key. Jangan jalankan migrasi ini pada instalasi baru yang memakai schema terbaru. Pembaruan source tidak otomatis mengubah kredensial atau database yang sudah ada.
 
 ## Konfigurasi `.env`
+
+### Maps dan koordinat perangkat
+
+- URL: `/maps.php`, input lokasi pada `/device-edit.php?id=ID` melalui menu Devices. Owner/PIC, departemen, dan maintainer: Not confirmed. Pengguna mengikuti akses admin publik aplikasi yang sudah ada; tidak ada login/role baru.
+- Leaflet **1.9.4 stable** disimpan lokal di `public/assets/vendor/leaflet-1.9.4/` dengan lisensi BSD-2-Clause. Peta dasar memakai `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, dengan atribusi OpenStreetMap yang tetap terlihat. Gambar peta memerlukan internet; tidak disediakan pengunduhan offline/prefetch massal. Ikuti [kebijakan tile OSM](https://operations.osmfoundation.org/policies/tiles/).
+- Tampilan awal mencakup Indonesia (batas tampilan sekitar 94,5–141,5 BT dan 11,5 LS–6,5 LU), termasuk jika belum ada perangkat berkoordinat. Peta tidak otomatis memperbesar kumpulan pin saat dibuka.
+- Paste pasangan angka `latitude, longitude` dari Google Maps menggunakan titik desimal, misalnya `-7.566712, 110.833458`. Link berbagi Google Maps tidak diproses. Latitude valid -90 sampai 90; longitude -180 sampai 180; koordinat nol valid. Presisi penyimpanan tujuh angka desimal.
+- Lokasi opsional. Mengosongkan field menghapus lokasi saat ini. Update ditransaksikan bersama konfigurasi device. Tidak ada tabel/audit riwayat lokasi dan tidak ada penulisan ke `sensor_logs` karena edit koordinat.
+- Nama perangkat, status Online/Offline, level air, Siaga, dan pengukuran terakhir tersedia di popup. Daftar juga menampilkan perangkat tanpa koordinat. Show on map memperbesar pin; Show Indonesia kembali ke tampilan awal. Status/koordinat merupakan snapshot saat halaman dibuka; Reload data memuat versi terbaru.
+- Form memakai CSRF dan validasi server. Input gagal dipertahankan dengan respons 422; input yang berubah ditandai Unsaved changes dan dilindungi prompt keluar browser. ID URL menentukan perangkat yang diedit, bukan hidden input yang bisa dimanipulasi.
+- Bila library/tile gagal dimuat, pesan error ditampilkan dan daftar perangkat tetap dapat digunakan. Pengujian browser memakai tile tiruan tanpa mengunduh tile OSM otomatis.
+- Implementasi: `app/admin.php::parseCoordinates/saveDevice`, `public/device-edit.php`, `public/assets/device-edit.js`, `public/maps.php`, `public/assets/maps.js`, dan layout/theme bersama. Terakhir diperbarui: 6 November 2026.
+
+### Nilai environment
 
 File `.env` default sudah disediakan. Jika belum ada, salin `.env.example` menjadi `.env`:
 

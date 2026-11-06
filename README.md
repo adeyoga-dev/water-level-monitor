@@ -15,7 +15,7 @@ Proyek PHP native 8.2+ dengan MySQL/MariaDB, dashboard admin, API ESP32, riwayat
 4. Buka `http://localhost:8000`, tambahkan perangkat, lalu atur threshold dan rentang Siaga.
 5. Isi `APP_URL` dengan alamat LAN yang dapat dijangkau ESP32, misalnya `http://192.168.1.10:8000`, dan sesuaikan konfigurasi sketch.
 
-Tidak memerlukan Composer, npm, Laravel, atau URL rewrite. Seluruh halaman memakai komponen dan warna bawaan Bootstrap 4.6.2 dari `public/assets/vendor/bootstrap-4.6.2-dist/`, tanpa CSS tambahan atau font eksternal. Ikon ringkasan menggunakan SVG inline lokal tanpa library ikon tambahan. Menu berada di kiri pada desktop dan di atas konten pada ponsel. Chart.js 4.6.1 beserta lisensinya disimpan di `public/assets/vendor/chartjs-4.6.1/`. Layout, ikon, dan grafik tersedia secara lokal tanpa koneksi internet atau CDN.
+Tidak memerlukan Composer, npm, Laravel, atau URL rewrite. Seluruh halaman memakai Bootstrap 4.6.2 lokal dengan design tokens dan override tema di `public/assets/css/`, serta font lokal. Ikon ringkasan menggunakan SVG inline lokal tanpa library ikon tambahan. Menu berada di kiri pada desktop dan dapat dibuka melalui Menu pada ponsel. Chart.js 4.6.1 dan Leaflet 1.9.4 beserta lisensinya disimpan di `public/assets/vendor/`. Layout, ikon, library peta, dan grafik tersedia lokal; gambar peta OpenStreetMap memerlukan internet.
 
 ## Dokumentasi
 
@@ -36,6 +36,7 @@ Pengujian integrasi memerlukan `pdo_mysql`, `curl`, izin membuat/menghapus datab
 
 ## Aturan aplikasi
 
+- Menu **Maps** (`/maps.php`) membuka peta seluruh Indonesia. Isi **Devices → Edit → Location coordinates** dengan pasangan angka dari Google Maps, contoh `-7.566712, 110.833458`. Simpan untuk mengganti lokasi saat ini; kosongkan untuk menghapus pin. Tidak ada riwayat lokasi dan sensor logs tidak diubah. Tombol Show on map memusatkan perangkat, Show Indonesia mengembalikan tampilan awal, Reload data memuat koordinat/status terbaru.
 - Ketinggian air menggunakan **cm**.
 - Buzzer hanya berbunyi jika diaktifkan dan `water_level > alarm_threshold`.
 - Klasifikasi Siaga merupakan label historis yang terpisah dari aturan buzzer. Label tampilannya adalah **Siaga 1**, **Siaga 2**, dan **Siaga 3**. Siaga 3 hanya memiliki batas bawah inklusif (`≥`) yang wajib diisi, tanpa batas atas.
@@ -48,3 +49,5 @@ Pengujian integrasi memerlukan `pdo_mysql`, `curl`, izin membuat/menghapus datab
 ## Database dari versi sebelumnya
 
 Jika sudah mengimpor schema lama yang memiliki tabel `device_siaga_ranges`, pilih database tersebut dan jalankan [001_english_alert_names.sql](database/migrations/001_english_alert_names.sql) **sekali** sebelum menggunakan versi ini. Query mengganti nama tabel rentang dan indeks unik tanpa menghapus data. Instalasi baru cukup memakai `schema.sql` terbaru.
+
+Untuk database yang belum memiliki `devices.latitude` dan `devices.longitude`, terapkan [002_device_coordinates.sql](database/migrations/002_device_coordinates.sql) sekali setelah menyetujui perubahan schema. Ini menambah dua kolom nullable tanpa lokasi contoh atau perubahan log. Impor ulang `schema.sql` tidak menambah kolom ke tabel yang sudah ada.
