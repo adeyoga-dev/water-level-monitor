@@ -1,5 +1,15 @@
 # Verifikasi Implementasi
 
+## Tema Flow / Webflow — 6 November 2026
+
+- Referensi: `docs/DESIGN.md` dan spesifikasi UI pengguna. Tokens warna, tipografi, spacing, radius, dan shadow berada di `public/assets/css/design-tokens.css`; override Bootstrap berada di `public/assets/css/theme.css`. Vendor Bootstrap tidak diedit.
+- Layout bersama menerapkan tema ke Dashboard, Devices, Sensor logs, OTA firmware, form administrasi device, dan detail/history. Posisi komponen desktop dipertahankan; stat card menjadi 1/2/4 kolom pada mobile/tablet/desktop. Menu mobile memakai disclosure HTML native yang dapat dioperasikan dengan keyboard.
+- Inter dan Inconsolata disimpan lokal beserta lisensi SIL OFL. Tidak diperlukan build frontend atau migrasi database.
+- Token PHP yang dieksekusi pada kedua file PHP yang berubah dibandingkan dengan HEAD dan identik. Perubahan JavaScript terbatas pada konfigurasi warna/font Chart.js; query, endpoint, filter, agregasi, polling, skala, dan data tidak diubah.
+- Verifikasi pada database MariaDB sementara yang terisolasi: 111 pemeriksaan logika/API dan 52 pemeriksaan browser lulus. Lima halaman utama diperiksa pada 390, 768, 992, dan 1440 px; mencakup overflow, bobot font maksimal 600, tombol minimal 44 px, menu keyboard, stat grid, serta seluruh pemeriksaan history sebelumnya.
+- Pemeriksaan sintaks PHP/JavaScript dan `git diff --check` lulus. Screenshot fixture diperiksa untuk dashboard desktop, form admin mobile, dan OTA firmware desktop. Browser menggunakan harness Chrome lokal karena masalah koneksi browser in-app yang sudah tercatat; ini bukan pengujian perangkat fisik.
+- Catatan kontras: teks sekunder kecil menggunakan `--body-mid` dari palet agar terbaca. Kombinasi badge Siaga 3 putih di atas `#ee1d36` dipertahankan sesuai spesifikasi warna eksplisit; kontras sekitar 4,3:1 belum memenuhi AA 4,5:1 untuk teks kecil. Keputusan menggelapkan merah masih menunggu preferensi pengguna.
+
 Verifikasi dilakukan pada 4 November 2026 menggunakan PHP 8.2.31 dan instance MariaDB 10.4.32 sementara yang terpisah dari database pengguna.
 
 - Pemeriksaan sintaks PHP lulus.

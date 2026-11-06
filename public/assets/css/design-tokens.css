@@ -1,0 +1,75 @@
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("../fonts/inter/InterVariable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Inconsolata;
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("../fonts/inconsolata/Inconsolata.ttf") format("truetype");
+}
+
+:root {
+  --primary: #080808;
+  --canvas: #ffffff;
+  --hairline: #d8d8d8;
+  --ink: #080808;
+  --ink-strong: #222222;
+  --body: #363636;
+  --body-mid: #5a5a5a;
+  --mute: #898989;
+  --mute-soft: #ababab;
+  --accent-purple: #7a3dff;
+  --accent-pink: #ed52cb;
+  --accent-blue: #3b89ff;
+  --accent-orange: #ff6b00;
+  --accent-green: #00d722;
+  --accent-yellow: #ffae13;
+  --accent-red: #ee1d36;
+  --accent-blue-info: #146ef5;
+  --accent-blue-deep: #006acc;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-full: 9999px;
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --border-width: 1px;
+  --focus-width: 2px;
+  --touch-target: 44px;
+  --icon-size: 48px;
+  --font-sans: Inter, Arial, sans-serif;
+  --font-mono: Inconsolata, "DM Mono", monospace;
+  --font-xs: 12px;
+  --font-caption: 12.8px;
+  --font-sm: 14px;
+  --font-eyebrow: 15px;
+  --font-body: 16px;
+  --font-unit: 20px;
+  --font-card: 24px;
+  --font-stat: 32px;
+  --font-title: 44.8px;
+  --font-level: 56px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-caption: 550;
+  --weight-semibold: 600;
+  --tracking-title: -.5px;
+  --tracking-eyebrow: 1.5px;
+  --tracking-table: .6px;
+  --surface-hover: color-mix(in srgb, var(--primary) 4%, var(--canvas));
+  --zone-opacity: .08;
+  --grid-color: color-mix(in srgb, var(--hairline) 50%, var(--canvas));
+  --shadow-feature: 0 54px 22px rgba(0,0,0,.01), 0 30px 18px rgba(0,0,0,.04), 0 13px 13px rgba(0,0,0,.08), 0 3px 7px rgba(0,0,0,.09);
+}

@@ -17,7 +17,7 @@
   const note = document.querySelector("#history-note");
   const colors = ["success", "warning", "danger", "secondary"].map((name) =>
     getComputedStyle(document.querySelector(`#history-legend .badge-${name}`)).backgroundColor);
-  const primary = getComputedStyle(refresh).color;
+  const primary = getComputedStyle(document.documentElement).getPropertyValue("--accent-blue-deep").trim();
   const labels = { minute: "Per minute", hour: "Hourly", day: "Daily", month: "Monthly", year: "Yearly" };
   const fullDate = new Intl.DateTimeFormat("en-GB", {
     timeZone: initial.timezone, year: "numeric", month: "short", day: "2-digit",
@@ -239,6 +239,14 @@
   window.addEventListener("beforeunload", (event) => {
     if (dirty()) { event.preventDefault(); event.returnValue = ""; }
   });
+  // Canvas styling shares the same tokens as the HTML components.
+  Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue("--body-mid").trim();
+  Chart.defaults.borderColor = getComputedStyle(document.documentElement).getPropertyValue("--grid-color").trim();
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  Chart.defaults.font.size = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--font-xs"));
+  Chart.defaults.plugins.tooltip.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim();
+  Chart.defaults.plugins.tooltip.titleFont.weight = getComputedStyle(document.documentElement).getPropertyValue("--weight-semibold").trim();
+  Chart.defaults.plugins.tooltip.footerFont.weight = getComputedStyle(document.documentElement).getPropertyValue("--weight-medium").trim();
   render(initial);
   controls();
   status.textContent = "Refreshes every 5 seconds";

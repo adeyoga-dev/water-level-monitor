@@ -12,26 +12,31 @@ function pageStart(string $title, string $active): void
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= h($title) ?> · Flow</title>
     <link rel="stylesheet" href="/assets/vendor/bootstrap-4.6.2-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/design-tokens.css">
+    <link rel="stylesheet" href="/assets/css/theme.css">
 </head>
 <body class="bg-light">
     <div class="container-fluid">
         <div class="row min-vh-100">
-            <aside class="col-md-3 col-lg-2 bg-white border-right p-3">
-                <a class="h3 d-block mb-1 text-primary text-decoration-none" href="/">Flow</a>
+            <aside class="flow-sidebar col-md-3 col-lg-2 bg-white border-right p-3">
+                <a class="flow-logo h3 d-block mb-1 text-primary text-decoration-none" href="/">Flow</a>
                 <p class="small text-muted mb-4">Water level monitor</p>
-                <nav class="nav flex-column nav-pills" aria-label="Main navigation">
+                <details class="flow-navigation">
+                    <summary><span aria-hidden="true">☰</span> Menu</summary>
+                    <nav class="nav flex-column nav-pills" aria-label="Main navigation">
                     <?php foreach (['dashboard' => ['/', 'Dashboard'], 'devices' => ['/devices.php', 'Devices'], 'logs' => ['/logs.php', 'Sensor logs'], 'firmwares' => ['/firmwares.php', 'OTA firmware']] as $key => $item): ?>
                         <a class="nav-link mb-1<?= $active === $key ? ' active' : '' ?>" href="<?= $item[0] ?>"<?= $active === $key ? ' aria-current="page"' : '' ?>><?= $item[1] ?></a>
                     <?php endforeach ?>
-                </nav>
+                    </nav>
+                </details>
                 <p class="small text-muted border-top pt-3 mt-4 mb-0">ESP32 monitoring<br><?= h(config('APP_TIMEZONE', 'Asia/Jakarta')) ?></p>
             </aside>
             <div class="col-md-9 col-lg-10 d-flex flex-column px-0">
-                <header class="bg-white border-bottom px-3 px-lg-4 py-3 d-flex flex-wrap justify-content-between align-items-center">
+                <header class="flow-topbar bg-white border-bottom px-3 px-lg-4 py-3 d-flex flex-wrap justify-content-between align-items-center">
                     <span class="text-muted">Monitoring system / <strong class="text-dark"><?= h($title) ?></strong></span>
                     <span class="badge badge-primary">Admin panel</span>
                 </header>
-                <main class="p-3 p-lg-4 flex-grow-1">
+                <main class="flow-main p-3 p-lg-4 flex-grow-1">
                     <?php if ($flash): ?><div class="alert alert-success" role="status"><?= h($flash) ?></div><?php endif ?>
 <?php
 }
@@ -40,7 +45,7 @@ function pageEnd(): void
 {
 ?>
                 </main>
-                <footer class="border-top px-3 px-lg-4 py-3 d-flex flex-wrap justify-content-between small text-muted">
+                <footer class="flow-footer border-top px-3 px-lg-4 py-3 d-flex flex-wrap justify-content-between small text-muted">
                     <span>Flow · Water level monitoring</span><span>PHP &amp; ESP32</span>
                 </footer>
             </div>
@@ -55,8 +60,8 @@ function pageTitle(string $eyebrow, string $title, string $description): void
 {
 ?>
     <div class="mb-4">
-        <p class="small text-primary font-weight-bold mb-1"><?= h($eyebrow) ?></p>
-        <h1 class="h3"><?= h($title) ?></h1>
+        <p class="flow-eyebrow small text-primary font-weight-bold mb-1"><?= h($eyebrow) ?></p>
+        <h1 class="flow-title h3"><?= h($title) ?></h1>
         <p class="text-muted mb-0"><?= h($description) ?></p>
     </div>
 <?php
@@ -170,11 +175,11 @@ function waterLevelPanels(array $devices, bool $detailView = false): void
         }
 ?>
         <div class="<?= count($devices) === 1 ? 'col-12' : 'col-12 col-lg-6' ?> mb-4">
-        <article class="card h-100">
+        <article class="flow-device-card card h-100">
             <div class="card-header bg-white d-flex justify-content-between align-items-start">
                 <div class="mr-3 text-break">
                     <h2 class="h4 mb-1">Water level monitor</h2>
-                    <p class="text-muted mb-0"><?= h($device['device_id']) ?></p>
+                    <p class="flow-device-id text-muted mb-0"><?= h($device['device_id']) ?></p>
                 </div>
                 <span class="badge badge-<?= $device['device_status'] ? 'success' : 'secondary' ?>"><?= $device['device_status'] ? 'Online' : 'Offline' ?></span>
             </div>
@@ -182,7 +187,7 @@ function waterLevelPanels(array $devices, bool $detailView = false): void
                 <div class="row mb-3">
                     <div class="col-sm-7 mb-2 mb-sm-0">
                         <span class="badge badge-<?= $statusColor ?>"><?= h($level === null ? 'No readings yet' : alertLabel($device['alert_status'])) ?></span>
-                        <p class="mb-0 mt-2 text-break"><strong class="h2"><?= $level === null ? '—' : h(number_format($level, 1)) ?></strong> <span class="text-muted">cm</span></p>
+                        <p class="flow-level mb-0 mt-2 text-break"><strong class="h2"><?= $level === null ? '—' : h(number_format($level, 1)) ?></strong> <span class="text-muted">cm</span></p>
                         <small class="text-muted">Display scale: <?= h(number_format($minimum, 1)) ?>–<?= h(number_format($maximum, 1)) ?> cm</small>
                     </div>
                     <div class="col-sm-5 text-sm-right">
@@ -193,7 +198,7 @@ function waterLevelPanels(array $devices, bool $detailView = false): void
                 </div>
                 <?php foreach (count($devices) === 1 && !$detailView ? [1000 => 'd-none d-md-block', 420 => 'd-md-none'] : [420 => 'd-block'] as $width => $visibility): ?>
                     <?php $graphicId = 'water-level-' . (int) $device['id'] . '-' . $width; ?>
-                    <svg class="w-100 <?= $visibility ?> border rounded" viewBox="0 0 <?= $width ?> 300" role="img" aria-labelledby="<?= $graphicId ?>-title <?= $graphicId ?>-description">
+                    <svg class="flow-water-chart w-100 <?= $visibility ?> border rounded" viewBox="0 0 <?= $width ?> 300" role="img" aria-labelledby="<?= $graphicId ?>-title <?= $graphicId ?>-description">
                         <title id="<?= $graphicId ?>-title">Water level · <?= h($device['device_id']) ?></title>
                         <desc id="<?= $graphicId ?>-description"><?= $level === null ? 'No sensor reading available.' : h(number_format($level, 1)) . ' cm.' ?> Alert ranges and boundaries follow the device settings. The scale adjusts automatically.</desc>
                         <defs>
@@ -225,7 +230,7 @@ function waterLevelPanels(array $devices, bool $detailView = false): void
                         <?php if ($level === null): ?><text class="text-secondary" x="<?= ($width + 48) / 2 ?>" y="155" fill="currentColor" text-anchor="middle" font-size="16">Awaiting sensor data</text><?php endif ?>
                     </svg>
                 <?php endforeach ?>
-                <div class="row mt-3">
+                <div class="flow-thresholds row mt-3">
                     <?php foreach ($ranges as $range): ?>
                         <div class="col-md-4 mb-2">
                             <span class="badge badge-<?= $colors[(int) $range['alarm_status']] ?>"><?= h(alertLabel($range['alarm_status'])) ?></span>
@@ -237,7 +242,7 @@ function waterLevelPanels(array $devices, bool $detailView = false): void
                         </div>
                     <?php endforeach ?>
                 </div>
-                <div class="border-top pt-3 mt-2 d-flex flex-wrap justify-content-between small">
+                <div class="flow-buzzer border-top pt-3 mt-2 d-flex flex-wrap justify-content-between small">
                     <span class="mr-3 mb-1">Buzzer: <span class="badge badge-<?= $device['buzzer_status'] ? 'primary' : 'secondary' ?>"><?= $device['buzzer_status'] ? 'Enabled' : 'Disabled' ?></span></span>
                     <span class="text-muted">Reported firmware: <?= h($device['reported_firmware'] ?? 'Not reported') ?></span>
                 </div>
