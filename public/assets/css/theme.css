@@ -22,7 +22,10 @@ a:hover { color: var(--body-mid); }
 .border, .border-top, .border-right, .border-bottom, .border-left { border-color: var(--hairline) !important; }
 .rounded { border-radius: var(--radius-sm) !important; }
 body .flow-sidebar { padding: var(--space-6) var(--space-4) !important; }
-.flow-logo { color: var(--ink) !important; font-weight: var(--weight-semibold); min-height: var(--touch-target); }
+.flow-logo { color: var(--ink) !important; font-weight: var(--weight-semibold); min-height: var(--touch-target); gap: var(--space-3); }
+.flow-brand-mark { width: var(--brand-mark-size); height: var(--brand-mark-size); flex-shrink: 0; }
+.flow-footer-brand { display: inline-flex; align-items: center; gap: var(--space-2); }
+.flow-footer-brand .flow-brand-mark { width: var(--brand-mark-footer-size); height: var(--brand-mark-footer-size); }
 .flow-sidebar .nav-link {
   color: var(--ink);
   min-height: var(--touch-target);
@@ -37,7 +40,7 @@ body .flow-sidebar { padding: var(--space-6) var(--space-4) !important; }
 .flow-sidebar details > nav { display: flex; }
 .flow-topbar, .flow-footer { padding: var(--space-4) var(--space-8) !important; gap: var(--space-2); }
 body .flow-main { min-width: 0; padding: var(--space-8) !important; }
-.flow-footer { font-size: var(--font-sm); }
+.flow-footer { font-size: var(--font-sm); align-items: center; }
 .flow-main > a { min-height: var(--touch-target); padding-top: var(--space-2); padding-bottom: var(--space-2); }
 .flow-eyebrow {
   color: var(--ink) !important;

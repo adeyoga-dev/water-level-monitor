@@ -49,6 +49,8 @@
   --focus-width: 2px;
   --touch-target: 44px;
   --icon-size: 48px;
+  --brand-mark-size: 36px;
+  --brand-mark-footer-size: 24px;
   --font-sans: Inter, Arial, sans-serif;
   --font-mono: Inconsolata, "DM Mono", monospace;
   --font-xs: 12px;
