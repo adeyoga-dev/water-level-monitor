@@ -1,21 +1,21 @@
-# Flow — Deteksi Level Air
+# Flow â€” Deteksi Level Air
 
-Proyek PHP native 8.2+ dengan MySQL/MariaDB, dashboard admin, API ESP32, riwayat sensor, dan pembaruan firmware OTA global. Dashboard langsung terbuka tanpa login; API perangkat tidak memerlukan token.
+Proyek PHP native 8.2+ dengan MySQL/MariaDB, login satu Admin, dashboard admin, API ESP32, riwayat sensor, dan pembaruan firmware OTA global. Halaman aplikasi membutuhkan login Admin dari `.env`. API perangkat tetap tidak memerlukan token.
 
 ## Mulai menjalankan
 
-1. Eksekusi [database/schema.sql](database/schema.sql) melalui phpMyAdmin atau klien MySQL.
-2. Isi kredensial database pada `.env` di root proyek. Template tersedia pada [.env.example](.env.example).
+1. Eksekusi [database/schema.sql](database/schema.sql) pada instalasi baru. Instalasi yang sudah ada tidak membutuhkan migrasi login.
+2. Isi `ADMIN_EMAIL`, `ADMIN_PASSWORD`, dan kredensial database pada `.env` di root proyek. Template tersedia pada [.env.example](.env.example).
 3. Jalankan dari root proyek:
 
    ```sh
    php -S 0.0.0.0:8000 -t public
    ```
 
-4. Buka `http://localhost:8000`, tambahkan perangkat, lalu atur threshold dan rentang Siaga.
+4. Buka `http://localhost:8000`, login, tambahkan perangkat, lalu atur threshold dan rentang Siaga.
 5. Isi `APP_URL` dengan alamat LAN yang dapat dijangkau ESP32, misalnya `http://192.168.1.10:8000`, dan sesuaikan konfigurasi sketch.
 
-Tidak memerlukan Composer, npm, Laravel, atau URL rewrite. Seluruh halaman memakai Bootstrap 4.6.2 lokal dengan design tokens dan override tema di `public/assets/css/`, serta font lokal. Ikon ringkasan menggunakan SVG inline lokal tanpa library ikon tambahan. Menu berada di kiri pada desktop dan dapat dibuka melalui Menu pada ponsel. Chart.js 4.6.1 dan Leaflet 1.9.4 beserta lisensinya disimpan di `public/assets/vendor/`. Layout, ikon, library peta, dan grafik tersedia lokal; gambar peta OpenStreetMap memerlukan internet.
+Login memakai session PHP native tanpa Composer atau SMTP. Tidak memerlukan npm, Laravel, atau URL rewrite. Seluruh halaman memakai Bootstrap 4.6.2 lokal dengan design tokens dan override tema di `public/assets/css/`, serta font lokal. Ikon ringkasan menggunakan SVG inline lokal tanpa library ikon tambahan. Menu berada di kiri pada desktop dan dapat dibuka melalui Menu pada ponsel. Chart.js 4.6.1 dan Leaflet 1.9.4 beserta lisensinya disimpan di `public/assets/vendor/`. Layout, ikon, library peta, dan grafik tersedia lokal; gambar peta OpenStreetMap memerlukan internet.
 
 ## Dokumentasi
 
@@ -36,11 +36,11 @@ Pengujian integrasi memerlukan `pdo_mysql`, `curl`, izin membuat/menghapus datab
 
 ## Aturan aplikasi
 
-- Menu **Maps** (`/maps.php`) membuka peta seluruh Indonesia. Isi **Devices → Edit → Location coordinates** dengan pasangan angka dari Google Maps, contoh `-7.566712, 110.833458`. Simpan untuk mengganti lokasi saat ini; kosongkan untuk menghapus pin. Tidak ada riwayat lokasi dan sensor logs tidak diubah. Tombol Show on map memusatkan perangkat, Show Indonesia mengembalikan tampilan awal, Reload data memuat koordinat/status terbaru.
+- Menu **Maps** (`/maps.php`) membuka peta seluruh Indonesia. Isi **Devices â†’ Edit â†’ Location coordinates** dengan pasangan angka dari Google Maps, contoh `-7.566712, 110.833458`. Simpan untuk mengganti lokasi saat ini; kosongkan untuk menghapus pin. Tidak ada riwayat lokasi dan sensor logs tidak diubah. Tombol Show on map memusatkan perangkat, Show Indonesia mengembalikan tampilan awal, Reload data memuat koordinat/status terbaru.
 - Ketinggian air menggunakan **cm**.
 - Buzzer hanya berbunyi jika diaktifkan dan `water_level > alarm_threshold`.
-- Klasifikasi Siaga merupakan label historis yang terpisah dari aturan buzzer. Label tampilannya adalah **Siaga 1**, **Siaga 2**, dan **Siaga 3**. Siaga 3 hanya memiliki batas bawah inklusif (`≥`) yang wajib diisi, tanpa batas atas.
-- Dashboard menampilkan panel muka air untuk seluruh perangkat, dua kolom per baris pada desktop dan satu kolom pada layar kecil. Satu perangkat memakai lebar penuh. Panel berisi skala cm, rentang Siaga, status koneksi, dan pembacaan terakhir. Tombol detail/riwayat membuka indikator perangkat serta grafik dengan filter tanggal awal–akhir dan pengelompokan Auto/Minute/Hour/Day/Month/Year. Mode Minute memakai satu tanggal yang sama untuk From dan To. Default 30 hari terakhir termasuk hari ini; grafik memperlihatkan rata-rata, minimum, dan maksimum seluruh pembacaan dalam periode. Pembaruan setiap 5 detik dijeda selama ada perubahan filter yang belum diterapkan. Skala indikator menyesuaikan pembacaan serta konfigurasi rentang; bukan kapasitas fisik atau persentase isi.
+- Klasifikasi Siaga merupakan label historis yang terpisah dari aturan buzzer. Label tampilannya adalah **Siaga 1**, **Siaga 2**, dan **Siaga 3**. Siaga 3 hanya memiliki batas bawah inklusif (`â‰¥`) yang wajib diisi, tanpa batas atas.
+- Dashboard menampilkan panel muka air untuk seluruh perangkat, dua kolom per baris pada desktop dan satu kolom pada layar kecil. Satu perangkat memakai lebar penuh. Panel berisi skala cm, rentang Siaga, status koneksi, dan pembacaan terakhir. Tombol detail/riwayat membuka indikator perangkat serta grafik dengan filter tanggal awalâ€“akhir dan pengelompokan Auto/Minute/Hour/Day/Month/Year. Mode Minute memakai satu tanggal yang sama untuk From dan To. Default 30 hari terakhir termasuk hari ini; grafik memperlihatkan rata-rata, minimum, dan maksimum seluruh pembacaan dalam periode. Pembaruan setiap 5 detik dijeda selama ada perubahan filter yang belum diterapkan. Skala indikator menyesuaikan pembacaan serta konfigurasi rentang; bukan kapasitas fisik atau persentase isi.
 - Interval pengiriman diisi sebagai jam:menit:detik pada dashboard dan disimpan/dikirim sebagai detik; nilai default 60 detik.
 - Firmware terbaru menjadi target global untuk semua perangkat dengan board dan partisi OTA yang kompatibel.
 - `current_firmware` adalah versi target; `reported_firmware` adalah versi terpasang yang dilaporkan ESP32.

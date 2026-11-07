@@ -11,7 +11,7 @@ function pageStart(string $title, string $active): void
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title><?= h($title) ?> · Flow</title>
+        <title><?= h($title) ?> Â· Flow</title>
         <link rel="icon" type="image/svg+xml" sizes="any" href="/assets/images/flow-mark.svg">
         <link rel="stylesheet" href="/assets/vendor/bootstrap-4.6.2-dist/css/bootstrap.min.css">
         <?php if ($active === 'maps'): ?><link rel="stylesheet" href="/assets/vendor/leaflet-1.9.4/leaflet.css"><?php endif ?>
@@ -23,13 +23,13 @@ function pageStart(string $title, string $active): void
         <div class="container-fluid">
             <div class="row min-vh-100">
                 <aside class="flow-sidebar col-md-3 col-lg-2 bg-white border-right p-3">
-                    <a class="flow-logo h3 d-flex align-items-center mb-1 text-primary text-decoration-none" href="/" aria-label="Flow — Dashboard">
+                    <a class="flow-logo h3 d-flex align-items-center mb-1 text-primary text-decoration-none" href="/" aria-label="Flow â€” Dashboard">
                         <img class="flow-brand-mark" src="/assets/images/flow-mark.svg" width="36" height="36" alt="" aria-hidden="true">
                         <span>Flow</span>
                     </a>
                     <p class="small text-muted mb-4">Water level monitor</p>
                     <details class="flow-navigation">
-                        <summary><span aria-hidden="true">☰</span> Menu</summary>
+                        <summary><span aria-hidden="true">â˜°</span> Menu</summary>
                         <nav class="nav flex-column nav-pills" aria-label="Main navigation">
                             <?php foreach (['dashboard' => ['/', 'Dashboard'], 'devices' => ['/devices.php', 'Devices'], 'maps' => ['/maps.php', 'Maps'], 'logs' => ['/logs.php', 'Sensor logs'], 'firmwares' => ['/firmwares.php', 'OTA firmware']] as $key => $item): ?>
                                 <a class="nav-link mb-1<?= $active === $key ? ' active' : '' ?>" href="<?= $item[0] ?>" <?= $active === $key ? ' aria-current="page"' : '' ?>><?= $item[1] ?></a>
@@ -41,7 +41,7 @@ function pageStart(string $title, string $active): void
                 <div class="col-md-9 col-lg-10 d-flex flex-column px-0">
                     <header class="flow-topbar bg-white border-bottom px-3 px-lg-4 py-3 d-flex flex-wrap justify-content-between align-items-center">
                         <span class="text-muted">Monitoring system / <strong class="text-dark"><?= h($title) ?></strong></span>
-                        <span class="badge badge-primary">Admin panel</span>
+                        <span class="badge badge-primary">Admin panel</span><span class="small"><?= h(currentUser()['email']) ?></span><form method="post" action="/logout.php"><input type="hidden" name="csrf" value="<?= h(csrf()) ?>"><button class="btn btn-outline-secondary" type="submit">Logout</button></form>
                     </header>
                     <main class="flow-main p-3 p-lg-4 flex-grow-1">
                         <?php if ($flash): ?><div class="alert alert-success" role="status"><?= h($flash) ?></div><?php endif ?>
@@ -55,7 +55,7 @@ function pageStart(string $title, string $active): void
                     <footer class="flow-footer border-top px-3 px-lg-4 py-3 d-flex flex-wrap justify-content-between small text-muted">
                         <span class="flow-footer-brand">
                             <img class="flow-brand-mark" src="/assets/images/flow-mark.svg" width="24" height="24" alt="" aria-hidden="true">
-                            <span><strong>Flow</strong> · Water level monitoring</span>
+                            <span><strong>Flow</strong> Â· Water level monitoring</span>
                         </span>
                     </footer>
                 </div>
@@ -101,11 +101,11 @@ function pageStart(string $title, string $active): void
                     <tr>
                         <td class="text-nowrap"><strong><?= h($device['device_id']) ?></strong><small class="d-block text-muted">#<?= h($device['id']) ?></small></td>
                         <td><span class="badge badge-<?= $device['device_status'] ? 'success' : 'secondary' ?>"><?= $device['device_status'] ? 'Online' : 'Offline' ?></span></td>
-                        <td class="text-nowrap"><strong><?= $device['water_level'] === null ? '—' : h(number_format((float)$device['water_level'], 2)) ?></strong> <span class="text-muted">cm</span></td>
+                        <td class="text-nowrap"><strong><?= $device['water_level'] === null ? 'â€”' : h(number_format((float)$device['water_level'], 2)) ?></strong> <span class="text-muted">cm</span></td>
                         <td><span class="badge badge-<?= [0 => 'success', 1 => 'warning', 2 => 'danger'][$device['alert_status'] ?? -1] ?? 'secondary' ?>"><?= h($device['water_level'] === null ? 'No readings yet' : alertLabel($device['alert_status'])) ?></span></td>
                         <td class="text-nowrap"><?= $device['buzzer_status'] ? 'Enabled' : 'Disabled' ?><small class="d-block text-muted">Threshold &gt; <?= h($device['alarm_threshold']) ?> cm</small></td>
                         <td class="text-nowrap"><?= h($device['update_interval']) ?> sec</td>
-                        <td class="text-nowrap"><?= h($device['reported_firmware'] ?? '—') ?><small class="d-block text-muted">Target <?= h($device['current_firmware'] ?? '—') ?></small></td>
+                        <td class="text-nowrap"><?= h($device['reported_firmware'] ?? 'â€”') ?><small class="d-block text-muted">Target <?= h($device['current_firmware'] ?? 'â€”') ?></small></td>
                         <td class="text-nowrap"><?= h($device['last_seen_display']) ?></td>
                         <td><a class="btn btn-sm btn-outline-primary" href="/device-edit.php?id=<?= h($device['id']) ?>">Edit<span class="sr-only"> <?= h($device['device_id']) ?></span></a></td>
                     </tr>
@@ -204,19 +204,19 @@ function pageStart(string $title, string $active): void
                     <div class="row mb-3">
                         <div class="col-sm-7 mb-2 mb-sm-0">
                             <span class="badge badge-<?= $statusColor ?>"><?= h($level === null ? 'No readings yet' : alertLabel($device['alert_status'])) ?></span>
-                            <p class="flow-level mb-0 mt-2 text-break"><strong class="h2"><?= $level === null ? '—' : h(number_format($level, 1)) ?></strong> <span class="text-muted">cm</span></p>
-                            <small class="text-muted">Display scale: <?= h(number_format($minimum, 1)) ?>–<?= h(number_format($maximum, 1)) ?> cm</small>
+                            <p class="flow-level mb-0 mt-2 text-break"><strong class="h2"><?= $level === null ? 'â€”' : h(number_format($level, 1)) ?></strong> <span class="text-muted">cm</span></p>
+                            <small class="text-muted">Display scale: <?= h(number_format($minimum, 1)) ?>â€“<?= h(number_format($maximum, 1)) ?> cm</small>
                         </div>
                         <div class="col-sm-5 text-sm-right">
                             <small class="text-muted d-block">Last measurement</small>
                             <span><?= h($device['last_seen_display']) ?></span>
-                            <?php if (!$device['device_status'] && $level !== null): ?><small class="d-block text-muted">Last recorded reading · device is offline</small><?php endif ?>
+                            <?php if (!$device['device_status'] && $level !== null): ?><small class="d-block text-muted">Last recorded reading Â· device is offline</small><?php endif ?>
                         </div>
                     </div>
                     <?php foreach (count($devices) === 1 && !$detailView ? [1000 => 'd-none d-md-block', 420 => 'd-md-none'] : [420 => 'd-block'] as $width => $visibility): ?>
                         <?php $graphicId = 'water-level-' . (int) $device['id'] . '-' . $width; ?>
                         <svg class="flow-water-chart w-100 <?= $visibility ?> border rounded" viewBox="0 0 <?= $width ?> 300" role="img" aria-labelledby="<?= $graphicId ?>-title <?= $graphicId ?>-description">
-                            <title id="<?= $graphicId ?>-title">Water level · <?= h($device['device_id']) ?></title>
+                            <title id="<?= $graphicId ?>-title">Water level Â· <?= h($device['device_id']) ?></title>
                             <desc id="<?= $graphicId ?>-description"><?= $level === null ? 'No sensor reading available.' : h(number_format($level, 1)) . ' cm.' ?> Alert ranges and boundaries follow the device settings. The scale adjusts automatically.</desc>
                             <defs>
                                 <linearGradient id="<?= $graphicId ?>-fill" x1="0" y1="0" x2="0" y2="1">
@@ -261,7 +261,7 @@ function pageStart(string $title, string $active): void
                             <div class="col-md-4 mb-2">
                                 <span class="badge badge-<?= $colors[(int) $range['alarm_status']] ?>"><?= h(alertLabel($range['alarm_status'])) ?></span>
                                 <small class="text-muted text-break">
-                                    <?php if ($range['min_level'] !== null): ?>≥ <?= h(number_format((float) $range['min_level'], 1)) ?> cm<?php endif ?>
+                                    <?php if ($range['min_level'] !== null): ?>â‰¥ <?= h(number_format((float) $range['min_level'], 1)) ?> cm<?php endif ?>
                                     <?php if ($range['min_level'] !== null && $range['max_level'] !== null): ?> and <?php endif ?>
                                     <?php if ($range['max_level'] !== null): ?>&lt; <?= h(number_format((float) $range['max_level'], 1)) ?> cm<?php endif ?>
                                 </small>
@@ -275,7 +275,7 @@ function pageStart(string $title, string $active): void
                 </div>
                 <?php if (!$detailView): ?>
                     <div class="card-footer bg-white text-right">
-                        <a class="btn btn-outline-primary" href="/device-history.php?<?= h(http_build_query(['device_id' => $device['device_id']])) ?>">View details &amp; history <span aria-hidden="true">→</span></a>
+                        <a class="btn btn-outline-primary" href="/device-history.php?<?= h(http_build_query(['device_id' => $device['device_id']])) ?>">View details &amp; history <span aria-hidden="true">â†’</span></a>
                     </div>
                 <?php endif ?>
             </article>

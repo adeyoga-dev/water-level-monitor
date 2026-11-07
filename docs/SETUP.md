@@ -1,5 +1,17 @@
 # Setup PHP Native dan MySQL
 
+## Login Admin — 7 November 2026
+
+Isi `ADMIN_EMAIL` dan `ADMIN_PASSWORD` di `.env`. Tidak ada kredensial bawaan. Gunakan password kuat dan bungkus nilai dengan tanda kutip bila perlu mempertahankan spasi. Password lama dari tabel akun tidak dapat dipulihkan menjadi teks asli. Akun hasil script lama tidak digunakan.
+
+Login `/login.php` memberi akses semua halaman bisnis. Session maksimal delapan jam, perubahan kredensial membatalkan session, dan Logout memakai POST + CSRF. Lima kegagalan login per IP dalam 15 menit memblokir percobaan berikutnya dengan 429 sampai kegagalan tertua keluar dari jendela waktu. Folder nonpublik `storage/auth` harus dapat ditulis PHP. Jangan mengekspos root proyek; document root tetap `public`.
+
+Tidak ada registrasi, Viewer, Users, reset password, email verifikasi, SMTP, atau kebutuhan Composer. Guest halaman diarahkan ke login; API browser mengembalikan 401. Endpoint ESP32 telemetry, device-config, firmware-download tetap publik.
+
+Untuk tabel akun yang sudah dimigrasikan, jalankan `php scripts/cleanup-auth.php` untuk preview. Setelah persetujuan eksplisit penghapusan database, jalankan `php scripts/cleanup-auth.php --apply`. Script menghapus delapan tabel autentikasi beserta akun lama, menolak foreign key ke tabel tersebut, dan tidak menargetkan tabel bisnis. DDL MySQL tidak dapat di-rollback: jika terjadi kegagalan sebagian, periksa hasil lalu jalankan ulang setelah penyebabnya diperbaiki. Skema instalasi baru tidak membuat tabel akun. Jangan menjalankan ulang migrasi historis `003_auth.sql`.
+
+Tes: `php tests/auth/session.php` dan `node tests/auth/verify.mjs --integration`. Runner kedua memiliki database MariaDB sementara dan Chrome sendiri di Windows; binary mengikuti path runner. Artefak di `temp/auth-tests`. Owner/PIC dan maintainer: Not confirmed.
+
 ## Persyaratan
 
 - PHP 8.2+ dengan `PDO`, `pdo_mysql`, `session`, `json`, `hash`, dan `fileinfo`.
@@ -7,7 +19,7 @@
 - Ekstensi PHP `curl` hanya diperlukan untuk pengujian integrasi HTTP.
 - Proses PHP harus memiliki izin menulis ke `storage/firmware` dan `storage/logs`.
 
-Tidak memerlukan proses build frontend atau dependency Composer.
+Tidak memerlukan proses build frontend. Tidak memerlukan Composer.
 
 ## Query database siap eksekusi
 
@@ -44,7 +56,7 @@ Schema sebelumnya memakai nama tabel rentang dalam bahasa Indonesia. Jika sudah 
 
 - URL: `/maps.php`, input lokasi pada `/device-edit.php?id=ID` melalui menu Devices. Owner/PIC, departemen, dan maintainer: Not confirmed. Pengguna mengikuti akses admin publik aplikasi yang sudah ada; tidak ada login/role baru.
 - Leaflet **1.9.4 stable** disimpan lokal di `public/assets/vendor/leaflet-1.9.4/` dengan lisensi BSD-2-Clause. Peta dasar memakai `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, dengan atribusi OpenStreetMap yang tetap terlihat. Gambar peta memerlukan internet; tidak disediakan pengunduhan offline/prefetch massal. Ikuti [kebijakan tile OSM](https://operations.osmfoundation.org/policies/tiles/).
-- Tampilan awal mencakup Indonesia (batas tampilan sekitar 94,5–141,5 BT dan 11,5 LS–6,5 LU), termasuk jika belum ada perangkat berkoordinat. Peta tidak otomatis memperbesar kumpulan pin saat dibuka.
+- Tampilan awal mencakup Indonesia (batas tampilan sekitar 94,5â€“141,5 BT dan 11,5 LSâ€“6,5 LU), termasuk jika belum ada perangkat berkoordinat. Peta tidak otomatis memperbesar kumpulan pin saat dibuka.
 - Paste pasangan angka `latitude, longitude` dari Google Maps menggunakan titik desimal, misalnya `-7.566712, 110.833458`. Link berbagi Google Maps tidak diproses. Latitude valid -90 sampai 90; longitude -180 sampai 180; koordinat nol valid. Presisi penyimpanan tujuh angka desimal.
 - Lokasi opsional. Mengosongkan field menghapus lokasi saat ini. Update ditransaksikan bersama konfigurasi device. Tidak ada tabel/audit riwayat lokasi dan tidak ada penulisan ke `sensor_logs` karena edit koordinat.
 - Nama perangkat, status Online/Offline, level air, Siaga, dan pengukuran terakhir tersedia di popup. Daftar juga menampilkan perangkat tanpa koordinat. Show on map memperbesar pin; Show Indonesia kembali ke tampilan awal. Status/koordinat merupakan snapshot saat halaman dibuka; Reload data memuat versi terbaru.
@@ -118,8 +130,8 @@ Batas aplikasi tetap 16 MB meskipun limit PHP lebih tinggi. File disimpan sebaga
 
 ## Menambahkan perangkat
 
-1. Buka **Devices → Add device**.
-2. Isi ID unik yang membedakan huruf besar/kecil, misalnya `ESP32-001`: 1–64 huruf ASCII, angka, `-`, atau `_`.
+1. Buka **Devices â†’ Add device**.
+2. Isi ID unik yang membedakan huruf besar/kecil, misalnya `ESP32-001`: 1â€“64 huruf ASCII, angka, `-`, atau `_`.
 3. Atur threshold alarm dalam cm, interval pengiriman, dan sakelar buzzer.
 4. Isi ketiga rentang Siaga, misalnya:
 
@@ -129,7 +141,7 @@ Batas aplikasi tetap 16 MB meskipun limit PHP lebih tinggi. File disimpan sebaga
 | Siaga 2 |          20 |         39 |
 | Siaga 3 |          40 |     kosong |
 
-Pembacaan `20` masuk Siaga 2; `40` masuk Siaga 3. Batas bawah termasuk rentang, sedangkan batas atas tidak termasuk. Siaga 1 dan 2 boleh memiliki sisi terbuka. **Siaga 3 wajib memiliki batas bawah dan selalu tanpa batas atas**: misalnya `≥ 40 cm`, sehingga `40`, `50`, maupun `999` tetap Siaga 3. Form Siaga 3 hanya menyediakan batas bawah; server menolak batas atas yang dikirim manual. Ketiga rentang tidak boleh tumpang tindih. Batas atas Siaga 1 tidak boleh sama dengan batas bawah Siaga 2; batas atas Siaga 2 tidak boleh sama dengan batas bawah Siaga 3. Perbandingan memakai nilai numerik, sehingga `20` dan `20.00` dianggap sama. Tidak ada minimum selisih satu cm; desimal yang berbeda tetap didukung. Celah menghasilkan label **Unclassified**; pada contoh di atas, `19 ≤ air < 20` dan `39 ≤ air < 40` tidak masuk rentang Siaga.
+Pembacaan `20` masuk Siaga 2; `40` masuk Siaga 3. Batas bawah termasuk rentang, sedangkan batas atas tidak termasuk. Siaga 1 dan 2 boleh memiliki sisi terbuka. **Siaga 3 wajib memiliki batas bawah dan selalu tanpa batas atas**: misalnya `â‰¥ 40 cm`, sehingga `40`, `50`, maupun `999` tetap Siaga 3. Form Siaga 3 hanya menyediakan batas bawah; server menolak batas atas yang dikirim manual. Ketiga rentang tidak boleh tumpang tindih. Batas atas Siaga 1 tidak boleh sama dengan batas bawah Siaga 2; batas atas Siaga 2 tidak boleh sama dengan batas bawah Siaga 3. Perbandingan memakai nilai numerik, sehingga `20` dan `20.00` dianggap sama. Tidak ada minimum selisih satu cm; desimal yang berbeda tetap didukung. Celah menghasilkan label **Unclassified**; pada contoh di atas, `19 â‰¤ air < 20` dan `39 â‰¤ air < 40` tidak masuk rentang Siaga.
 
 Pada konfigurasi lama, batas atas Siaga 3 diabaikan untuk klasifikasi pembacaan baru dan tampilan indikator. Menyimpan ulang pengaturan perangkat akan menyimpan batas atas tersebut sebagai `NULL`. Log historis tidak diubah dan tidak diperlukan migrasi database.
 
@@ -139,7 +151,7 @@ Perangkat baru tetap Offline sampai POST telemetry pertama berhasil. GET konfigu
 
 ## Deteksi Offline dan penjadwalan
 
-Perangkat menjadi Offline setelah lebih dari `max(3 × update_interval, 30)` detik tanpa telemetry, atau ketika mengirim `device_status: 0`. Pembacaan terakhir tetap tersedia.
+Perangkat menjadi Offline setelah lebih dari `max(3 Ã— update_interval, 30)` detik tanpa telemetry, atau ketika mengirim `device_status: 0`. Pembacaan terakhir tetap tersedia.
 
 Dashboard memeriksa status saat pertama dibuka dan setiap 5 detik. Agar status tersimpan tetap diperbarui saat dashboard ditutup, jadwalkan `php scripts/mark-offline.php` setiap menit.
 
@@ -171,4 +183,4 @@ Versi yang ditulis saat upload **harus sama** dengan `FIRMWARE_VERSION` di dalam
 | Perangkat tetap Offline         | GET tidak menandai Online; sensor harus menghasilkan nilai valid dan POST harus berhasil     |
 | Pengaturan buzzer belum berlaku | ESP32 menerima perubahan pada GET/POST berikutnya sesuai interval                            |
 
-Login dan token ditiadakan sesuai kebutuhan. Form dashboard menggunakan perlindungan CSRF melalui session; endpoint perangkat tidak membuka CORS bebas.
+Halaman bisnis memerlukan login Admin; endpoint perangkat tetap tanpa token. Form dashboard menggunakan perlindungan CSRF melalui session; endpoint perangkat tidak membuka CORS bebas.

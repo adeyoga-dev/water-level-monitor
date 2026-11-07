@@ -1,4 +1,5 @@
 .env
+vendor/
 storage/firmware/*
 !storage/firmware/.gitkeep
 storage/logs/*
@@ -7,3 +8,5 @@ tests/.tmp*
 AGENTS.md
 RTK.md
 temp/
+
+storage/auth/*

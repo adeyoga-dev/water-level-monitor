@@ -1,6 +1,6 @@
 # API ESP32
 
-Contoh base URL: `http://192.168.1.10:8000`. Endpoint menggunakan `/api/` tanpa login atau token. Daftarkan `device_id` di dashboard terlebih dahulu; huruf besar/kecil dibedakan.
+Contoh base URL: `http://192.168.1.10:8000`. Endpoint perangkat `telemetry.php`, `device-config.php`, dan `firmware-download.php` tetap tanpa login atau token. Endpoint browser `dashboard.php` dan `device-history.php` membutuhkan session Admin: guest menerima 401. Daftarkan `device_id` di dashboard sebagai Admin terlebih dahulu; huruf besar/kecil dibedakan.
 
 ## POST `/api/telemetry.php`
 
@@ -17,7 +17,7 @@ Gunakan `Content-Type: application/json`. Ukuran body maksimum 16 KB.
 
 | Field              | Validasi                                                                                      |
 | ------------------ | --------------------------------------------------------------------------------------------- |
-| `device_id`        | Wajib berupa string: 1–64 huruf ASCII, angka, `-`, atau `_`                                   |
+| `device_id`        | Wajib berupa string: 1â€“64 huruf ASCII, angka, `-`, atau `_`                                   |
 | `water_level`      | Wajib berupa nilai numerik terbatas dalam cm; mendukung desimal                               |
 | `device_status`    | Wajib berupa integer JSON `0` atau `1`; kirim `1` saat beroperasi                             |
 | `firmware_version` | Opsional dengan format `vMAJOR.MINOR.PATCH`; versi tersimpan dipertahankan jika tidak dikirim |
@@ -83,7 +83,7 @@ ESP32 membandingkan versi numerik (`v1.10.0 > v1.9.0`), mengunduh dan memverifik
 
 ## Label Siaga
 
-`sensor_logs.alarm_status`: `0` ditampilkan sebagai **Siaga 1**, `1` sebagai **Siaga 2**, `2` sebagai **Siaga 3**, dan `null` sebagai **Unclassified**. Setiap rentang mencakup batas bawah dan tidak mencakup batas atas. Siaga 3 hanya memakai batas bawah (`≥`) tanpa batas atas. Batas atas Siaga 3 pada konfigurasi lama diabaikan saat mengklasifikasikan pembacaan baru; log historis tidak diubah.
+`sensor_logs.alarm_status`: `0` ditampilkan sebagai **Siaga 1**, `1` sebagai **Siaga 2**, `2` sebagai **Siaga 3**, dan `null` sebagai **Unclassified**. Setiap rentang mencakup batas bawah dan tidak mencakup batas atas. Siaga 3 hanya memakai batas bawah (`â‰¥`) tanpa batas atas. Batas atas Siaga 3 pada konfigurasi lama diabaikan saat mengklasifikasikan pembacaan baru; log historis tidak diubah.
 
 Saat menyimpan pengaturan perangkat, server menolak batas atas Siaga 1 yang sama dengan batas bawah Siaga 2, serta batas atas Siaga 2 yang sama dengan batas bawah Siaga 3. Nilai numerik ekuivalen seperti `20` dan `20.00` tetap dianggap sama. Rentang tetap tidak boleh tumpang tindih; celah di antaranya menghasilkan `Unclassified`. Pembacaan konfigurasi lama dan log historis tidak mengubah data secara otomatis.
 
@@ -110,7 +110,7 @@ Saat jaringan gagal, contoh firmware mempertahankan konfigurasi terakhir yang va
 
 `GET /api/dashboard.php` memperbarui panel muka air setiap 5 detik setelah request sebelumnya selesai. Respons berisi HTML panel yang sudah di-escape, total perangkat, jumlah Online, dan jumlah log. Struktur field JSON tetap sama; field `html` kini merender indikator air SVG, rentang Siaga, status, dan pembacaan terakhir. Endpoint ini digunakan frontend, bukan kontrak telemetry ESP32.
 
-Grafik memakai rentang perangkat yang sedang berlaku dengan label Siaga 1, Siaga 2, dan Siaga 3. Batas bawah inklusif, batas atas eksklusif; Siaga 3 selalu ditampilkan sebagai `≥ batas bawah` dan areanya memanjang sampai puncak skala tampilan. Label Siaga pada SVG memakai font 11 dan kotak 68 × 18 unit agar lebih ringkas. Skala sumbu ditentukan otomatis dari pembacaan dan batas rentang, bukan tinggi maksimum fisik. Ketika perangkat Offline, pembacaan terakhir tetap ditampilkan dengan keterangan Offline. Tanpa pembacaan, panel menampilkan `No readings yet` tanpa mengisi grafik air. Jika request gagal atau dibatalkan setelah 15 detik, browser mempertahankan panel terakhir, mengakhiri status loading, dan mencoba kembali.
+Grafik memakai rentang perangkat yang sedang berlaku dengan label Siaga 1, Siaga 2, dan Siaga 3. Batas bawah inklusif, batas atas eksklusif; Siaga 3 selalu ditampilkan sebagai `â‰¥ batas bawah` dan areanya memanjang sampai puncak skala tampilan. Label Siaga pada SVG memakai font 11 dan kotak 68 Ã— 18 unit agar lebih ringkas. Skala sumbu ditentukan otomatis dari pembacaan dan batas rentang, bukan tinggi maksimum fisik. Ketika perangkat Offline, pembacaan terakhir tetap ditampilkan dengan keterangan Offline. Tanpa pembacaan, panel menampilkan `No readings yet` tanpa mengisi grafik air. Jika request gagal atau dibatalkan setelah 15 detik, browser mempertahankan panel terakhir, mengakhiri status loading, dan mencoba kembali.
 
 ## Detail perangkat dan grafik riwayat
 
@@ -132,7 +132,7 @@ Halaman detail secara default memakai 30 hari terakhir termasuk hari ini berdasa
 `GET /api/device-history.php?device_id=ESP32-001&from=2026-01-01&to=2026-12-31&group_by=auto`
 
 - `from` dan `to` wajib berpasangan dalam format tanggal kalender `YYYY-MM-DD`, keduanya inklusif dalam zona waktu aplikasi. Rentang tanggal yang didukung `1000-01-01` hingga `9999-12-30`; awal tidak boleh melewati akhir.
-- `group_by`: `auto` (default), `minute`, `hour`, `day`, `month`, atau `year`. Auto memakai jam untuk satu hari, hari untuk 2–62 hari, bulan untuk 63–731 hari, dan tahun untuk rentang lebih panjang. Pilihan **Minute** menampilkan satu interval per menit dan mensyaratkan `from` serta `to` pada tanggal yang sama; memakai dua tanggal berbeda menghasilkan `422` dengan petunjuk memilih satu tanggal.
+- `group_by`: `auto` (default), `minute`, `hour`, `day`, `month`, atau `year`. Auto memakai jam untuk satu hari, hari untuk 2â€“62 hari, bulan untuk 63â€“731 hari, dan tahun untuk rentang lebih panjang. Pilihan **Minute** menampilkan satu interval per menit dan mensyaratkan `from` serta `to` pada tanggal yang sama; memakai dua tanggal berbeda menghasilkan `422` dengan petunjuk memilih satu tanggal.
 - Pada halaman grafik, validasi Minute dijalankan saat **Apply filters** ditekan. Jika tanggal berbeda, Bootstrap alert ditampilkan dan diberi fokus tanpa mengirim request. Teks bantuan permanen tidak ditampilkan. Input dan grafik terakhir dipertahankan; mengedit filter menutup alert. Validasi server tetap berlaku untuk request langsung.
 - Agregasi mencakup **seluruh** log perangkat dalam periode, tanpa batas 500 log raw. Mode menit mendukung satu hari penuh (1.440 interval, hingga 1.500 pada hari DST 25 jam). Pengelompokan lain yang menghasilkan lebih dari 500 interval ditolak dengan `422`; pilih rentang lebih pendek atau interval lebih besar. Data tidak dipotong diam-diam.
 - `filters` berisi pilihan tanggal dan pengelompokan yang diminta; `aggregation` berisi interval aktual. `limit` menjadi `null`, `reading_count` adalah jumlah seluruh pembacaan terpilih, dan `period` berisi batas sumbu `from`/`to` UTC milidetik.

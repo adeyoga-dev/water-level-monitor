@@ -18,3 +18,9 @@ set_exception_handler(function (Throwable $e): void {
 });
 loadEnv(dirname(__DIR__) . '/.env');
 date_default_timezone_set('UTC');
+if (PHP_SAPI !== 'cli') {
+    require_once __DIR__ . '/auth.php';
+    $path = $_SERVER['SCRIPT_NAME'] ?? '';
+    $public = ['/login.php','/api/telemetry.php','/api/device-config.php','/api/firmware-download.php'];
+    if (!in_array($path, $public, true)) requireAccess();
+}

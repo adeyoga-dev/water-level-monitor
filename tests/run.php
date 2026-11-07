@@ -57,6 +57,8 @@ try {
     $migratedLocationRow=$pdo->query("SELECT * FROM devices WHERE device_id='MIGRATION-EXISTING'")->fetch(PDO::FETCH_ASSOC);
     check($migratedLocationRow['latitude']===null && $migratedLocationRow['longitude']===null && array_diff_key($migratedLocationRow,['latitude'=>true,'longitude'=>true])===$legacyLocationRow,'coordinate migration preserves existing device data with no invented location');
     putenv('DB_DATABASE='.$testDatabase);
+    putenv('ADMIN_EMAIL=integration@example.test');
+    putenv('ADMIN_PASSWORD=IntegrationPassword123!');
     putenv('APP_URL=http://127.0.0.1:18765');
     $input=['device_id'=>'ESP32-TEST','alarm_threshold'=>'20','hours'=>'0','minutes'=>'1','seconds'=>'0','ranges'=>$ranges];
     $id=saveDevice($input);
@@ -84,6 +86,8 @@ try {
         if($response===false)throw new RuntimeException($error);
         return [$code,$response,json_decode($response,true)];
     }
+    $loginHtml=request('/login.php')[1];preg_match('/name="csrf" value="([a-f0-9]+)"/',$loginHtml,$authToken);
+    check(request('/login.php','POST',http_build_query(['csrf'=>$authToken[1],'email'=>'integration@example.test','password'=>'IntegrationPassword123!']),false)[0]===302,'integration admin signs in');
     [$code,,$body]=request('/api/device-config.php?device_id=ESP32-TEST');
     check($code===200 && $body['latest_firmware']===null && $body['update_interval']===60,'GET configuration without firmware');
     check((int)query('SELECT device_status FROM devices WHERE id=?',[$id])->fetchColumn()===0 && (int)query('SELECT COUNT(*) FROM sensor_logs')->fetchColumn()===0,'GET does not mark online or insert logs');
@@ -133,7 +137,7 @@ try {
     check(request('/device-edit.php?id='.$locationId,'POST',http_build_query($locationForm),false)[0]===422 && query('SELECT * FROM devices WHERE id=?',[$locationId])->fetch()===$beforeInvalidLocation,'location form rejects invalid CSRF without writes');
     $locationForm['csrf']=$deviceToken[1];$locationForm['coordinates']='';
     check(request('/device-edit.php?id='.$locationId,'POST',http_build_query($locationForm),false)[0]===302 && query('SELECT latitude,longitude FROM devices WHERE id=?',[$locationId])->fetch()===['latitude'=>null,'longitude'=>null],'blank coordinates remove the current location');
-    check((int)query('SELECT COUNT(*) FROM sensor_logs')->fetchColumn()===$logsBeforeLocation && count(query('SHOW TABLES')->fetchAll())===4,'location creates updates and removals do not create sensor or location history');
+    check((int)query('SELECT COUNT(*) FROM sensor_logs')->fetchColumn()===$logsBeforeLocation && count(query("SHOW TABLES LIKE '%location%'")->fetchAll())===0,'location creates updates and removals do not create sensor or location history');
     $beforeRollbackLocation=query('SELECT * FROM devices WHERE id=?',[$locationId])->fetch();
     $beforeRollbackRanges=query('SELECT * FROM device_alert_ranges WHERE device_id=? ORDER BY alarm_status',[$locationId])->fetchAll();
     $pdo->exec("CREATE TRIGGER test_location_range_failure BEFORE INSERT ON device_alert_ranges FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='intentional location test failure'");

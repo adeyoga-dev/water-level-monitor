@@ -161,6 +161,17 @@
       });
       const data = await response.json();
       if (requestRevision !== revision || stopped) return;
+      if (response.status === 401 || response.status === 403) {
+        stopped = true;
+        error.textContent = "Access ended. Sign in again to continue. Your current filters are retained.";
+        const link = document.createElement("a");
+        link.href = "/login.php";
+        link.textContent = " Sign in";
+        error.append(link);
+        error.hidden = false;
+        status.textContent = "Access ended";
+        return;
+      }
       if (!response.ok || data.status !== "success") {
         if (response.status === 422 && typeof data.message === "string") failureMessage = data.message;
         throw new Error("History unavailable");
