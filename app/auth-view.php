@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= h($title) ?> Â· Flow</title><link rel="icon" href="/assets/images/flow-mark.svg">
+<title><?= h($title) ?> · Flow</title><link rel="icon" href="/assets/images/flow-mark.svg">
 <link rel="stylesheet" href="/assets/vendor/bootstrap-4.6.2-dist/css/bootstrap.min.css"><link rel="stylesheet" href="/assets/css/design-tokens.css"><link rel="stylesheet" href="/assets/css/theme.css"></head>
 <body><main class="container py-5"><div class="row justify-content-center"><section class="col-md-8 col-lg-5"><div class="card"><div class="card-body">
 <a class="flow-logo d-flex align-items-center text-decoration-none mb-4" href="/login.php"><img class="flow-brand-mark" src="/assets/images/flow-mark.svg" alt="" width="36" height="36">Flow</a>

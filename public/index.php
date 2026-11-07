@@ -2,14 +2,14 @@
 require dirname(__DIR__) . '/app/bootstrap.php';
 require dirname(__DIR__) . '/app/admin.php';
 require dirname(__DIR__) . '/app/layout.php';
-$devices = deviceList();
-$online = count(array_filter($devices, fn($d) => (int)$d['device_status'] === 1));
-$logs = (int) query('SELECT COUNT(*) FROM sensor_logs')->fetchColumn();
-pageStart('Dashboard', 'dashboard');
+$viewer = defined('FLOW_VIEWER') && FLOW_VIEWER;
+$devices = deviceList(!$viewer);
+$online = $viewer ? count($devices) : count(array_filter($devices, fn($d) => (int)$d['device_status'] === 1));
+pageStart('Dashboard', 'dashboard', $viewer);
 pageTitle('OVERVIEW', 'Monitor water. Stay informed.', 'Device status and water levels, all in one place.');
 ?>
 <div class="flow-stats row mx-n2 mb-2">
-    <div class="col-md-6 col-lg-3 px-2 mb-3">
+    <div class="col-md-6 col-lg-4 px-2 mb-3">
         <article class="card h-100 shadow-sm">
             <div class="card-body d-flex align-items-center p-3">
                 <span class="flow-stat-icon flow-stat-total d-flex align-items-center justify-content-center flex-shrink-0 rounded bg-light text-primary p-3 mr-3" aria-hidden="true">
@@ -25,7 +25,7 @@ pageTitle('OVERVIEW', 'Monitor water. Stay informed.', 'Device status and water 
             </div>
         </article>
     </div>
-    <div class="col-md-6 col-lg-3 px-2 mb-3">
+    <div class="col-md-6 col-lg-4 px-2 mb-3">
         <article class="card h-100 shadow-sm">
             <div class="card-body d-flex align-items-center p-3">
                 <span class="flow-stat-icon flow-stat-online d-flex align-items-center justify-content-center flex-shrink-0 rounded bg-light text-success p-3 mr-3" aria-hidden="true">
@@ -40,7 +40,7 @@ pageTitle('OVERVIEW', 'Monitor water. Stay informed.', 'Device status and water 
             </div>
         </article>
     </div>
-    <div class="col-md-6 col-lg-3 px-2 mb-3">
+    <div class="col-md-6 col-lg-4 px-2 mb-3">
         <article class="card h-100 shadow-sm">
             <div class="card-body d-flex align-items-center p-3">
                 <span class="flow-stat-icon flow-stat-offline d-flex align-items-center justify-content-center flex-shrink-0 rounded bg-light text-danger p-3 mr-3" aria-hidden="true">
@@ -56,24 +56,8 @@ pageTitle('OVERVIEW', 'Monitor water. Stay informed.', 'Device status and water 
             </div>
         </article>
     </div>
-    <div class="col-md-6 col-lg-3 px-2 mb-3">
-        <article class="card h-100 shadow-sm">
-            <div class="card-body d-flex align-items-center p-3">
-                <span class="flow-stat-icon flow-stat-logs d-flex align-items-center justify-content-center flex-shrink-0 rounded bg-light text-info p-3 mr-3" aria-hidden="true">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                        <ellipse cx="12" cy="5" rx="8" ry="3"/>
-                        <path d="M4 5v7c0 4 16 4 16 0V5M4 12v7c0 4 16 4 16 0v-7"/>
-                    </svg>
-                </span>
-                <div>
-                    <h2 class="h6 font-weight-normal text-muted mb-1">Saved logs</h2>
-                    <strong class="h4 d-block text-info mb-0" id="stat-logs"><?= $logs ?></strong>
-                </div>
-            </div>
-        </article>
-    </div>
 </div>
 <p class="small text-muted" id="refresh-status" role="status" aria-live="polite">Refreshes every 5 seconds</p>
-<div class="row" id="water-level-panels" aria-busy="false"><?php waterLevelPanels($devices) ?></div>
+<div class="row" id="water-level-panels" data-endpoint="<?= $viewer ? '/api/viewer-dashboard.php' : '/api/dashboard.php' ?>" aria-busy="false"><?php waterLevelPanels($devices, false, $viewer) ?></div>
 <script src="/assets/dashboard.js" defer></script>
 <?php pageEnd(); ?>

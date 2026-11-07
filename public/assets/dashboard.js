@@ -7,7 +7,7 @@ async function refreshDashboard() {
   panels.setAttribute("aria-busy", "true");
   status.textContent = "Updating device readings…";
   try {
-    const response = await fetch("/api/dashboard.php", {
+    const response = await fetch(panels.dataset.endpoint || "/api/dashboard.php", {
       cache: "no-store",
       signal: controller.signal,
     });
@@ -28,7 +28,6 @@ async function refreshDashboard() {
     document.querySelector("#stat-online").textContent = data.online;
     document.querySelector("#stat-offline").textContent =
       data.total - data.online;
-    document.querySelector("#stat-logs").textContent = data.logs;
     status.textContent = "Updated " + new Date().toLocaleTimeString("en-GB");
   } catch (_) {
     status.textContent = "Connection lost · retrying";

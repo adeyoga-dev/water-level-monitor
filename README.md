@@ -36,6 +36,8 @@ Pengujian integrasi memerlukan `pdo_mysql`, `curl`, izin membuat/menghapus datab
 
 ## Aturan aplikasi
 
+- Viewer tanpa login: `/viewer.php` untuk Dashboard dan `/viewer-maps.php` untuk Maps. Hanya baca, tanpa detail/history atau edit. Badge viewer selalu Online sesuai kebutuhan tampilan; Admin tetap menampilkan status koneksi sebenarnya. Saved logs dihapus dari ringkasan dashboard, sedangkan halaman Sensor logs tetap khusus Admin.
+
 - Menu **Maps** (`/maps.php`) membuka peta seluruh Indonesia. Isi **Devices â†’ Edit â†’ Location coordinates** dengan pasangan angka dari Google Maps, contoh `-7.566712, 110.833458`. Simpan untuk mengganti lokasi saat ini; kosongkan untuk menghapus pin. Tidak ada riwayat lokasi dan sensor logs tidak diubah. Tombol Show on map memusatkan perangkat, Show Indonesia mengembalikan tampilan awal, Reload data memuat koordinat/status terbaru.
 - Ketinggian air menggunakan **cm**.
 - Buzzer hanya berbunyi jika diaktifkan dan `water_level > alarm_threshold`.

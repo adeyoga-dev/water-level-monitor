@@ -1,5 +1,11 @@
 # Verifikasi Implementasi
 
+## Viewer publik — 7 November 2026
+
+Dashboard `/viewer.php` dan Maps `/viewer-maps.php` dapat dibuka tanpa login. Pengujian pada database terisolasi lulus: GET viewer/polling, POST ditolak 405, akses langsung halaman dan API admin tetap ditolak meskipun memakai `viewer=1`, tidak ada tautan history/edit atau Saved logs, badge viewer selalu Online, dan status admin tetap mengikuti data. Snapshot empat tabel bisnis sebelum/sesudah akses viewer serta percobaan tulis yang ditolak identik. Tidak ada migrasi database.
+
+Browser Chrome pada lebar 390 dan 1440 px memverifikasi dua menu viewer, polling dashboard, popup Maps tanpa edit, dan tidak ada overflow horizontal. Screenshot dashboard viewer diperiksa. Sebanyak 142 pemeriksaan aplikasi lama juga lulus; sintaks PHP/JS dan diff whitespace lulus. Peta memakai fixture pengujian untuk tile eksternal, bukan verifikasi ketersediaan layanan OpenStreetMap. Aturan Online tetap adalah presentasi viewer yang diminta pengguna, bukan pembuktian perangkat terhubung.
+
 ## Login Admin sederhana — 7 November 2026
 
 Session PHP native memakai ADMIN_EMAIL/ADMIN_PASSWORD dari konfigurasi; tidak ada dependensi Composer, role Viewer, registrasi, atau SMTP. Runner `node tests/auth/verify.mjs --integration` lulus 142 pemeriksaan aplikasi serta HTTP/browser login: guest redirect/401, API konfigurasi perangkat publik, login email tanpa peka kapital, password salah, CSRF login/logout, akses Admin halaman/API, logout, URL fitur akun lama 404, dan desktop/mobile tanpa overflow. Database pengujian terisolasi, bukan database aplikasi.

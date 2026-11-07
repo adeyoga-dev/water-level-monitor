@@ -226,6 +226,9 @@ label, legend { font-weight: var(--weight-medium); }
 #history-chart-area { border: var(--border-width) solid var(--hairline); border-radius: var(--radius-md); padding: var(--space-2); }
 .flow-map { height: var(--map-height); border: var(--border-width) solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-hover); isolation: isolate; z-index: 0; font-family: var(--font-sans); }
 .flow-map-actions { gap: var(--space-2); }
+.flow-map .flow-map-popup .btn-primary { color: var(--canvas); background: var(--primary); border-color: var(--primary); }
+.flow-map .flow-map-popup .btn-primary:hover,
+.flow-map .flow-map-popup .btn-primary:focus-visible { color: var(--ink); background: var(--canvas); border-color: var(--primary); }
 .flow-map .leaflet-control-zoom a { width: var(--touch-target); height: var(--touch-target); line-height: var(--touch-target); background: var(--canvas); color: var(--ink); border-color: var(--hairline); font-weight: var(--weight-semibold); }
 .flow-map .leaflet-bar { border: var(--border-width) solid var(--hairline); box-shadow: none; border-radius: var(--radius-sm); }
 .flow-map .leaflet-popup-content-wrapper { background: var(--canvas); color: var(--body); border: var(--border-width) solid var(--hairline); border-radius: var(--radius-md); box-shadow: var(--shadow-feature); }

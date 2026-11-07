@@ -16,6 +16,15 @@ if (in_array('--verify-server', $argv, true)) {
     echo "Isolated database server verified.\n";
     exit;
 }
+if (in_array('--snapshot', $argv, true)) {
+    $pdo->exec('USE `' . $database . '`');
+    $hash = hash_init('sha256');
+    foreach (['devices', 'device_alert_ranges', 'sensor_logs', 'firmwares'] as $table) {
+        foreach ($pdo->query('SELECT * FROM `' . $table . '` ORDER BY id') as $row) hash_update($hash, json_encode($row));
+    }
+    echo hash_final($hash);
+    exit;
+}
 $pdo->exec('CREATE DATABASE `' . $database . '` CHARACTER SET utf8mb4');
 $pdo->exec('USE `' . $database . '`');
 $schema = file_get_contents(dirname(__DIR__, 2) . '/database/schema.sql');

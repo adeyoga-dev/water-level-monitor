@@ -100,7 +100,30 @@
     edit.className = "btn btn-outline-secondary";
     edit.href = `/device-edit.php?id=${encodeURIComponent(device.id)}`;
     edit.textContent = "Edit location";
-    popup.append(title, badge, reading, location, seen, edit);
+    const view = document.createElement("a");
+    view.className = "btn btn-primary";
+    view.href = container.dataset.viewer === "true" ? "/viewer.php" : "/";
+    view.textContent = "View";
+    const zoomOut = document.createElement("button");
+    zoomOut.type = "button";
+    zoomOut.className = "btn btn-primary";
+    zoomOut.textContent = "Zoom in";
+    zoomOut.addEventListener("click", () => {
+      map.closePopup();
+      map.setView([device.latitude, device.longitude], map.getMaxZoom(), {
+        animate: false,
+      });
+      container.focus({ preventScroll: true });
+    });
+    const primaryActions = document.createElement("div");
+    primaryActions.className = "d-flex flex-nowrap flow-map-actions";
+    primaryActions.append(view, zoomOut);
+    const actions = document.createElement("div");
+    actions.className = "d-flex flex-wrap flow-map-actions";
+    actions.append(primaryActions);
+    if (container.dataset.viewer !== "true") actions.append(edit);
+    popup.append(title, badge, reading, location, seen);
+    popup.append(actions);
     const marker = L.marker([device.latitude, device.longitude], {
       title: `${device.device_id} · ${device.online ? "Online" : "Offline"}`,
       alt: device.device_id,

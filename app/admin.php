@@ -105,9 +105,9 @@ function uploadFirmware(array $input, array $file): void
     }
 }
 
-function deviceList(): array
+function deviceList(bool $refreshStatus = true): array
 {
-    markOffline();
+    if ($refreshStatus) markOffline();
     $devices = query('SELECT * FROM devices ORDER BY id DESC')->fetchAll();
     $ranges = query('SELECT * FROM device_alert_ranges ORDER BY alarm_status')->fetchAll();
     $grouped = [];

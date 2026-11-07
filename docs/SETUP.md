@@ -6,7 +6,11 @@ Isi `ADMIN_EMAIL` dan `ADMIN_PASSWORD` di `.env`. Tidak ada kredensial bawaan. G
 
 Login `/login.php` memberi akses semua halaman bisnis. Session maksimal delapan jam, perubahan kredensial membatalkan session, dan Logout memakai POST + CSRF. Lima kegagalan login per IP dalam 15 menit memblokir percobaan berikutnya dengan 429 sampai kegagalan tertua keluar dari jendela waktu. Folder nonpublik `storage/auth` harus dapat ditulis PHP. Jangan mengekspos root proyek; document root tetap `public`.
 
-Tidak ada registrasi, Viewer, Users, reset password, email verifikasi, SMTP, atau kebutuhan Composer. Guest halaman diarahkan ke login; API browser mengembalikan 401. Endpoint ESP32 telemetry, device-config, firmware-download tetap publik.
+Tidak ada registrasi, akun Viewer, Users, reset password, email verifikasi, SMTP, atau kebutuhan Composer. Guest halaman admin diarahkan ke login; API admin mengembalikan 401. Endpoint ESP32 telemetry, device-config, firmware-download tetap publik.
+
+Viewer publik tersedia di `/viewer.php` (Dashboard) dan `/viewer-maps.php` (Maps), tanpa login. Navigasi hanya dua halaman tersebut; tidak ada tombol history, edit lokasi, atau tambah perangkat. Dashboard viewer polling `/api/viewer-dashboard.php` setiap lima detik; endpoint hanya menerima GET dan tidak menyediakan history atau jumlah log. Mengirim `viewer=1` ke URL admin tidak membuka akses. Halaman viewer juga hanya menerima GET.
+
+Sesuai permintaan tampilan, badge koneksi viewer selalu **Online**, jumlah Online sama dengan jumlah perangkat dan Offline nol. Ini label presentasi, bukan hasil pemeriksaan konektivitas. Status asli tetap ada di database dan tampil di Admin; permintaan viewer tidak menjalankan pembaruan status offline. Tinggi air, label Siaga, koordinat, dan waktu pengukuran tetap berasal dari data sebenarnya. Ringkasan Saved logs dihilangkan dari dashboard Admin dan viewer; halaman Sensor logs tetap tersedia untuk Admin.
 
 Untuk tabel akun yang sudah dimigrasikan, jalankan `php scripts/cleanup-auth.php` untuk preview. Setelah persetujuan eksplisit penghapusan database, jalankan `php scripts/cleanup-auth.php --apply`. Script menghapus delapan tabel autentikasi beserta akun lama, menolak foreign key ke tabel tersebut, dan tidak menargetkan tabel bisnis. DDL MySQL tidak dapat di-rollback: jika terjadi kegagalan sebagian, periksa hasil lalu jalankan ulang setelah penyebabnya diperbaiki. Skema instalasi baru tidak membuat tabel akun. Jangan menjalankan ulang migrasi historis `003_auth.sql`.
 

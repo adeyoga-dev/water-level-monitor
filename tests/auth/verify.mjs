@@ -205,25 +205,102 @@ try {
     return {code:response.status,location:response.headers.get('location'),html:await response.text()};
   }
   const token = html => html.match(/name="csrf" value="([a-f0-9]+)"/)[1];
+  async function checkPopupZoomOut() {
+    await send('Input.dispatchMouseEvent', {type:'mouseMoved', x:0, y:0});
+    const button = await evaluate(`(() => {
+      const view = document.querySelector('.leaflet-popup-content a.btn-primary');
+      const zoom = document.querySelector('.leaflet-popup-content button.btn-primary');
+      const left = view.getBoundingClientRect(), right = zoom.getBoundingClientRect();
+      return {label:zoom.textContent, color:getComputedStyle(zoom).color, viewColor:getComputedStyle(view).color,
+        beside:right.left >= left.right && Math.abs(right.top-left.top)<2,
+        x:right.left+right.width/2, y:right.top+right.height/2};
+    })()`);
+    assert.equal(button.label, 'Zoom out');
+    assert.equal(button.color, 'rgb(255, 255, 255)');
+    assert.equal(button.viewColor, 'rgb(255, 255, 255)');
+    assert.equal(button.beside, true);
+    await send('Input.dispatchMouseEvent', {type:'mouseMoved', x:button.x, y:button.y});
+    await waitFor('getComputedStyle(document.querySelector(".leaflet-popup-content button.btn-primary")).color === "rgb(8, 8, 8)"');
+    await evaluate('document.querySelector(".leaflet-popup-content button.btn-primary").click()');
+    await waitFor('document.querySelector(".leaflet-control-zoom-out").classList.contains("leaflet-disabled")');
+    await evaluate('document.querySelector("[data-map-device]").click()');
+    await waitFor('!!document.querySelector(".leaflet-popup-content")');
+    await send('Input.dispatchMouseEvent', {type:'mouseMoved', x:0, y:0});
+  }
   for (const route of ['/','/devices.php','/maps.php','/logs.php','/firmwares.php','/device-edit.php','/device-history.php?device_id=ESP32-001']) assert.equal((await req(route)).code,302,route);
   for (const route of ['/api/dashboard.php','/api/device-history.php?device_id=ESP32-001']) assert.equal((await req(route)).code,401);
   assert.equal((await req('/api/device-config.php?device_id=ESP32-001')).code,200);
-  for (const route of ['/register.php','/viewer.php','/verify-email.php','/resend-verification.php']) assert.equal((await req(route)).code,404);
+  for (const route of ['/register.php','/verify-email.php','/resend-verification.php']) assert.equal((await req(route)).code,404);
+  const snapshot = () => run('php', [path.join(sourceDir, 'seed.php'), '--snapshot'], fixtureEnv);
+  const beforeViewer = await snapshot();
+  for (const route of ['/viewer.php', '/viewer-maps.php']) {
+    const page = await req(route);
+    assert.equal(page.code, 200);
+    assert.ok(!/href="\/(?:device-edit|device-history|devices|logs|firmwares)\.php/.test(page.html));
+    assert.ok(!page.html.includes('Saved logs'));
+    assert.equal((await req(route, {device_id:'ESP32-001', water_level:999})).code, 405);
+  }
+  const viewerData = JSON.parse((await req('/api/viewer-dashboard.php')).html);
+  assert.equal(viewerData.online, viewerData.total);
+  assert.ok(!('logs' in viewerData));
+  assert.ok(!/Offline|device-history.php|device-edit.php/.test(viewerData.html));
+  assert.ok(viewerData.html.includes('Online'));
+  assert.equal((await req('/api/viewer-dashboard.php',{water_level:999})).code,405);
+  for (const route of ['/device-edit.php?id=1&viewer=1', '/firmwares.php?viewer=1', '/device-history.php?device_id=ESP32-001&viewer=1']) {
+    assert.equal((await req(route, {device_id:'ESP32-001', water_level:999})).code,302);
+  }
+  assert.equal((await req('/api/device-history.php?device_id=ESP32-001&viewer=1')).code,401);
+  assert.equal(await snapshot(), beforeViewer, 'Viewer and denied writes must not change business data');
   let login=await req('/login.php');
   assert.equal((await req('/login.php',{csrf:'bad',email:'admin@example.test',password:'StrongPassword123!'})).code,422);
   assert.equal((await req('/login.php',{csrf:token(login.html),email:'admin@example.test',password:'wrong'})).code,422);
   assert.equal((await req('/login.php',{csrf:token(login.html),email:'ADMIN@example.test',password:'StrongPassword123!'})).location,'/');
+  assert.ok(!(await req('/')).html.includes('Saved logs'));
+  const adminData = JSON.parse((await req('/api/dashboard.php')).html);
+  assert.ok(adminData.online < adminData.total, 'Admin must retain actual offline statuses');
+  assert.ok(adminData.html.includes('device-history.php'));
   for (const route of ['/','/devices.php','/maps.php','/logs.php','/firmwares.php','/api/dashboard.php','/api/device-history.php?device_id=ESP32-001']) assert.equal((await req(route)).code,200,route);
   assert.equal((await req('/logout.php',{csrf:'bad'})).code,422);
   assert.equal((await req('/logout.php',{csrf:token((await req('/')).html)})).location,'/login.php');
   assert.equal((await req('/api/dashboard.php')).code,401);
   for (const width of [390,1440]) {
     await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<768});
+    await navigate('/viewer.php');
+    assert.equal(await evaluate('document.querySelectorAll("nav a").length'), 2);
+    assert.equal(await evaluate('!!document.querySelector("a[href*=device-history], #stat-logs, form")'),false);
+    await waitFor('document.querySelector("#refresh-status").textContent.startsWith("Updated ")');
+    assert.equal(await evaluate('document.querySelector("#stat-online").textContent === document.querySelector("#stat-total").textContent'),true);
+    assert.equal(await evaluate('document.querySelector("#stat-offline").textContent'), '0');
+    assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth + 1'),false);
+    await writeFile(path.join(taskDir,'screenshots','viewer-'+width+'.png'),Buffer.from((await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true})).data,'base64'));
+    await navigate('/viewer-maps.php');
+    await waitFor('!document.querySelector("[data-map-device]").disabled');
+    await evaluate('document.querySelector("[data-map-device]").click()');
+    await waitFor('!!document.querySelector(".leaflet-popup-content")');
+    assert.equal(await evaluate('!!document.querySelector("a[href*=device-edit]")'),false);
+    assert.equal(await evaluate('document.querySelector(".leaflet-popup-content .badge").textContent'), 'Online');
+    await checkPopupZoomOut();
+    assert.equal(await evaluate('document.querySelector(".leaflet-popup-content .btn-primary").textContent'), 'View');
+    const viewerView = loaded();
+    await evaluate('document.querySelector(".leaflet-popup-content .btn-primary").click()');
+    await viewerView;
+    assert.equal(await evaluate('location.pathname'), '/viewer.php');
+    assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth + 1'),false);
     await navigate('/login.php');
     assert.equal(await evaluate(`document.documentElement.scrollWidth > innerWidth+1`),false);
     await evaluate(`document.querySelector('#email').value='admin@example.test';document.querySelector('#password').value='StrongPassword123!';`);
     const done=loaded();await evaluate(`document.querySelector('form').requestSubmit()`);await done;
     assert.equal(await evaluate('location.pathname'),'/');
+    await navigate('/maps.php');
+    await waitFor('!document.querySelector("[data-map-device]").disabled');
+    await evaluate('document.querySelector("[data-map-device]").click()');
+    await waitFor('!!document.querySelector(".leaflet-popup-content")');
+    assert.equal(await evaluate('!!document.querySelector(".leaflet-popup-content a[href*=device-edit]")'), true);
+    await checkPopupZoomOut();
+    const adminView = loaded();
+    await evaluate('document.querySelector(".leaflet-popup-content .btn-primary").click()');
+    await adminView;
+    assert.equal(await evaluate('location.pathname'), '/');
     const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
     await writeFile(path.join(taskDir,'screenshots','login-'+width+'.png'),Buffer.from(shot.data,'base64'));
     const out=loaded();await evaluate(`document.querySelector('form[action="/logout.php"]').requestSubmit()`);await out;

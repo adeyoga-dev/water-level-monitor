@@ -108,6 +108,8 @@ Saat jaringan gagal, contoh firmware mempertahankan konfigurasi terakhir yang va
 
 ## Endpoint dashboard
 
+`GET /api/viewer-dashboard.php` adalah endpoint publik khusus tampilan viewer. Respons berisi `status`, `html`, `total`, dan `online`, tanpa riwayat atau jumlah log. HTML tidak berisi tautan history/edit. `online` selalu sama dengan `total` sesuai aturan presentasi viewer; ini tidak mengubah status koneksi yang tersimpan. Endpoint Admin `/api/dashboard.php` tetap memerlukan login dan mengembalikan status sebenarnya. Halaman publik: `/viewer.php` dan `/viewer-maps.php`.
+
 `GET /api/dashboard.php` memperbarui panel muka air setiap 5 detik setelah request sebelumnya selesai. Respons berisi HTML panel yang sudah di-escape, total perangkat, jumlah Online, dan jumlah log. Struktur field JSON tetap sama; field `html` kini merender indikator air SVG, rentang Siaga, status, dan pembacaan terakhir. Endpoint ini digunakan frontend, bukan kontrak telemetry ESP32.
 
 Grafik memakai rentang perangkat yang sedang berlaku dengan label Siaga 1, Siaga 2, dan Siaga 3. Batas bawah inklusif, batas atas eksklusif; Siaga 3 selalu ditampilkan sebagai `â‰¥ batas bawah` dan areanya memanjang sampai puncak skala tampilan. Label Siaga pada SVG memakai font 11 dan kotak 68 Ã— 18 unit agar lebih ringkas. Skala sumbu ditentukan otomatis dari pembacaan dan batas rentang, bukan tinggi maksimum fisik. Ketika perangkat Offline, pembacaan terakhir tetap ditampilkan dengan keterangan Offline. Tanpa pembacaan, panel menampilkan `No readings yet` tanpa mengisi grafik air. Jika request gagal atau dibatalkan setelah 15 detik, browser mempertahankan panel terakhir, mengakhiri status loading, dan mencoba kembali.
