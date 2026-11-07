@@ -5,6 +5,7 @@
 #include <ArduinoJson.h>
 #include <mbedtls/sha256.h>
 #include <math.h>
+#include <HardwareSerial.h>
 
 const char* WIFI_SSID = "YOUR_WIFI";
 const char* WIFI_PASSWORD = "YOUR_PASSWORD";
@@ -13,6 +14,19 @@ const String DEVICE_ID = "ESP32-001";
 const String FIRMWARE_VERSION = "v1.0.0";
 const int BUZZER_PIN = 25; // Active buzzer; adapt pin and voltage to your board.
 const bool BUZZER_ACTIVE_HIGH = true;
+// DYP-A01ANYUB V2 UART auto output; ESP32 DevKit / WROOM-32.
+// Sensor TX -> GPIO 26 at 3.3 V logic. Sensor RX stays unconnected (processed mode).
+HardwareSerial sensorSerial(2);
+const int SENSOR_RX_PIN = 26;
+const int SENSOR_TX_PIN = 27; // ESP32 UART TX: leave physically unconnected.
+const uint32_t SENSOR_BAUD = 9600;
+const float SENSOR_MOUNT_HEIGHT_CM = 200.0f; // Sensor face to the zero-water reference.
+const float SENSOR_MIN_DISTANCE_CM = 28.0f;
+const float SENSOR_MAX_DISTANCE_CM = 750.0f;
+const uint32_t SENSOR_READ_TIMEOUT_MS = 1800;
+const uint32_t FRAME_GAP_TIMEOUT_MS = 50;
+const uint8_t SENSOR_SAMPLES = 5;
+const uint8_t MIN_VALID_SAMPLES = 3;
 const uint32_t SENSOR_INTERVAL_MS = 5000;
 const uint32_t OTA_RETRY_MS = 300000;
 
@@ -28,10 +42,71 @@ bool otaAttempted = false;
 String latestFirmware, otaUrl, firmwareSha256;
 
 float readWaterLevelCm() {
-  // Replace with the real sensor driver and calibration.
-  // For an ultrasonic sensor: water height = mounting height - measured distance.
-  // Return NAN when the sensor is disconnected or measurement is invalid.
-  return NAN;
+    float distances[SENSOR_SAMPLES];
+    uint8_t count = 0;
+    uint8_t frame[4] = {};
+    uint8_t frameSize = 0;
+    if (!isfinite(SENSOR_MOUNT_HEIGHT_CM) || SENSOR_MOUNT_HEIGHT_CM <= SENSOR_MIN_DISTANCE_CM ||
+        SENSOR_MOUNT_HEIGHT_CM > SENSOR_MAX_DISTANCE_CM) {
+        Serial.println("Invalid sensor mounting height. Check calibration constants.");
+        return NAN;
+    }
+    // Drop buffered readings from before HTTP/OTA delays; only use fresh frames.
+    int buffered = sensorSerial.available();
+    while (buffered-- > 0) sensorSerial.read();
+    uint32_t started = millis();
+    uint32_t lastByte = started;
+    while (count < SENSOR_SAMPLES && (uint32_t)(millis() - started) < SENSOR_READ_TIMEOUT_MS) {
+        if ((uint32_t)(millis() - lastByte) > FRAME_GAP_TIMEOUT_MS) frameSize = 0;
+        if (!sensorSerial.available()) {
+            delay(1);
+            continue;
+        }
+        int received = sensorSerial.read();
+        if (received < 0) continue;
+        lastByte = millis();
+        if (frameSize == 0 && received != 0xFF) continue;
+        frame[frameSize++] = static_cast<uint8_t>(received);
+        if (frameSize < 4) continue;
+        uint8_t checksum = static_cast<uint8_t>(frame[0] + frame[1] + frame[2]);
+        if (checksum != frame[3]) {
+            // Slide to a possible next header, including 0xFF inside a damaged frame.
+            uint8_t next = 1;
+            while (next < 4 && frame[next] != 0xFF) next++;
+            frameSize = 4 - next;
+            for (uint8_t index = 0; index < frameSize; index++) frame[index] = frame[next + index];
+            continue;
+        }
+        uint16_t distanceMm = (static_cast<uint16_t>(frame[1]) << 8) | frame[2];
+        frameSize = 0;
+        float distance = distanceMm / 10.0f;
+        // 280 mm may mean the target is anywhere inside the blind zone.
+        if (distance <= SENSOR_MIN_DISTANCE_CM || distance > SENSOR_MAX_DISTANCE_CM) {
+            Serial.printf("UART distance out of usable range: %u mm\n", static_cast<unsigned int>(distanceMm));
+            return NAN;
+        }
+        // Insert in order so isolated distance spikes cannot dominate the median.
+        uint8_t position = count;
+        while (position > 0 && distances[position - 1] > distance) {
+            distances[position] = distances[position - 1];
+            position--;
+        }
+        distances[position] = distance;
+        count++;
+    }
+    if (count < MIN_VALID_SAMPLES) {
+        Serial.println("Not enough fresh UART frames. Check sensor power, TX wiring and baud rate.");
+        return NAN;
+    }
+    float distance = count % 2 == 0
+        ? (distances[count / 2 - 1] + distances[count / 2]) / 2.0f
+        : distances[count / 2];
+    float level = SENSOR_MOUNT_HEIGHT_CM - distance;
+    // Reject impossible calibration results instead of reporting a false zero.
+    if (!isfinite(level) || level < 0) return NAN;
+    Serial.printf("Distance: %.1f cm | Water level: %.1f cm | Valid frames: %u/%u\n",
+        distance, level, static_cast<unsigned int>(count), static_cast<unsigned int>(SENSOR_SAMPLES));
+    return level;
 }
 
 void setBuzzer(bool on) {
@@ -172,6 +247,7 @@ void tryOta() {
 
 void setup() {
   Serial.begin(115200);
+    sensorSerial.begin(SENSOR_BAUD, SERIAL_8N1, SENSOR_RX_PIN, SENSOR_TX_PIN);
   pinMode(BUZZER_PIN, OUTPUT);
   setBuzzer(false);
   WiFi.mode(WIFI_STA);
@@ -187,7 +263,7 @@ void loop() {
     lastSample=t;
     latestWaterLevel=readWaterLevelCm();
     sensorValid=isfinite(latestWaterLevel);
-    if (!sensorValid) Serial.println("No valid sensor reading. Configure readWaterLevelCm(); telemetry skipped.");
+    if (!sensorValid) Serial.println("Invalid ultrasonic reading. Check wiring, range and mounting height; telemetry skipped.");
     evaluateBuzzer();
   }
   if (WiFi.status() != WL_CONNECTED) {
