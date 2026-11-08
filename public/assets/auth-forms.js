@@ -2,7 +2,10 @@
   for (const form of document.querySelectorAll('form[method="post"]')) {
     let submitting = false;
     form.addEventListener("submit", (event) => {
-      if (submitting) { event.preventDefault(); return; }
+      if (submitting) {
+        event.preventDefault();
+        return;
+      }
       submitting = true;
       form.setAttribute("aria-busy", "true");
       if (event.submitter?.name) {
@@ -13,13 +16,17 @@
         action.dataset.submittedAction = "true";
         form.append(action);
       }
-      for (const button of form.querySelectorAll("button")) button.disabled = true;
+      for (const button of form.querySelectorAll("button"))
+        button.disabled = true;
     });
     window.addEventListener("pageshow", () => {
       submitting = false;
       form.setAttribute("aria-busy", "false");
-      form.querySelectorAll('[data-submitted-action]').forEach(input => input.remove());
-      for (const button of form.querySelectorAll("button")) button.disabled = false;
+      form
+        .querySelectorAll("[data-submitted-action]")
+        .forEach((input) => input.remove());
+      for (const button of form.querySelectorAll("button"))
+        button.disabled = false;
     });
   }
 })();

@@ -224,10 +224,10 @@ function deviceHistory(mixed $identifier, array $filters = []): array
         $bucketOffset = $subDaily ? ',utc_offset' : '';
         $rows = query(
             "SELECT DATE_FORMAT(TIMESTAMPADD(SECOND,utc_offset,created_at),'$format') AS bucket$bucketOffset, " .
-            'AVG(water_level) AS average_level, MIN(water_level) AS min_level, MAX(water_level) AS max_level, COUNT(*) AS reading_count ' .
-            "FROM (SELECT created_at,water_level,CAST(($offsetSql) AS SIGNED) AS utc_offset FROM sensor_logs " .
-            "WHERE device_id=? AND created_at>=? AND created_at<?) AS history GROUP BY bucket$bucketOffset ORDER BY bucket ASC" .
-            ($subDaily ? ',utc_offset DESC' : ''),
+                'AVG(water_level) AS average_level, MIN(water_level) AS min_level, MAX(water_level) AS max_level, COUNT(*) AS reading_count ' .
+                "FROM (SELECT created_at,water_level,CAST(($offsetSql) AS SIGNED) AS utc_offset FROM sensor_logs " .
+                "WHERE device_id=? AND created_at>=? AND created_at<?) AS history GROUP BY bucket$bucketOffset ORDER BY bucket ASC" .
+                ($subDaily ? ',utc_offset DESC' : ''),
             [...$offsetParams, $identifier, $startUtc->format('Y-m-d H:i:s'), $endUtc->format('Y-m-d H:i:s')]
         )->fetchAll();
         $buckets = [];

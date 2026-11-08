@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 function adminCredentials(): array
@@ -48,7 +49,8 @@ function signInAdmin(string $email, string $password): bool
             throw new InvalidArgumentException('Too many attempts. Please try again in 15 minutes.');
         }
         $valid = hash_equals($expectedEmail, strtolower(trim($email))) & hash_equals(hash('sha256', $expectedPassword), hash('sha256', $password));
-        if ($valid) $attempts = []; else $attempts[] = time();
+        if ($valid) $attempts = [];
+        else $attempts[] = time();
         rewind($file);
         if (!ftruncate($file, 0) || fwrite($file, json_encode($attempts, JSON_THROW_ON_ERROR)) === false || !fflush($file)) throw new RuntimeException('Cannot save login protection.');
     } finally {

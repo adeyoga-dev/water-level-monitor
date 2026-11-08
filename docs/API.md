@@ -17,7 +17,7 @@ Gunakan `Content-Type: application/json`. Ukuran body maksimum 16 KB.
 
 | Field              | Validasi                                                                                      |
 | ------------------ | --------------------------------------------------------------------------------------------- |
-| `device_id`        | Wajib berupa string: 1â€“64 huruf ASCII, angka, `-`, atau `_`                                   |
+| `device_id`        | Wajib berupa string: 1â€“64 huruf ASCII, angka, `-`, atau `_`                                 |
 | `water_level`      | Wajib berupa nilai numerik terbatas dalam cm; mendukung desimal                               |
 | `device_status`    | Wajib berupa integer JSON `0` atau `1`; kirim `1` saat beroperasi                             |
 | `firmware_version` | Opsional dengan format `vMAJOR.MINOR.PATCH`; versi tersimpan dipertahankan jika tidak dikirim |

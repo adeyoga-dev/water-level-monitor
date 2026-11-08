@@ -16,12 +16,12 @@ Contoh menggunakan buzzer aktif pada GPIO 25. Sesuaikan pin/rangkaian dengan boa
 
 Sensor pengguna: **A01ANYUB V2**, SKU penjual **KB5005**, output **UART**, supply **3,3–5 V**, blind zone **28 cm**, rentang objek datar **28–750 cm**, dan IP67 berdasarkan foto spesifikasi. Model DYP-A01ANYUB-V2.0 menggunakan UART otomatis. Sketch memakai HardwareSerial UART2 pada **ESP32 DevKit berbasis WROOM-32**; model board pengguna belum dikonfirmasi dan pin/UART perlu disesuaikan untuk C3/S3. Tidak perlu library sensor tambahan.
 
-| Pin A01ANYUB V2 | Sambungan awal (supply sensor 3,3 V) |
-| --- | --- |
-| VCC | 3V3 dengan suplai arus yang memadai |
-| GND | GND bersama dengan ESP32 |
-| TX | GPIO 26, yaitu RX UART2 ESP32 |
-| RX | Biarkan tidak tersambung untuk mode nilai terproses |
+| Pin A01ANYUB V2 | Sambungan awal (supply sensor 3,3 V)                |
+| --------------- | --------------------------------------------------- |
+| VCC             | 3V3 dengan suplai arus yang memadai                 |
+| GND             | GND bersama dengan ESP32                            |
+| TX              | GPIO 26, yaitu RX UART2 ESP32                       |
+| RX              | Biarkan tidak tersambung untuk mode nilai terproses |
 
 GPIO 27 dikonfigurasi sebagai TX UART2 ESP32 tetapi tidak disambungkan ke sensor. Pin RX sensor adalah pemilih mode pada varian UART auto: floating/high menghasilkan nilai terproses yang lebih stabil, low menghasilkan nilai real-time. Tidak ada trigger Trig/Echo atau perintah polling UART. Ikuti label pin/datasheet unit, jangan menebak fungsi berdasarkan warna kabel.
 

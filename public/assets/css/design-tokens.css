@@ -71,14 +71,16 @@
   --weight-medium: 500;
   --weight-caption: 550;
   --weight-semibold: 600;
-  --tracking-title: -.5px;
+  --tracking-title: -0.5px;
   --tracking-eyebrow: 1.5px;
-  --tracking-table: .6px;
+  --tracking-table: 0.6px;
   --surface-hover: color-mix(in srgb, var(--primary) 4%, var(--canvas));
-  --zone-opacity: .08;
+  --zone-opacity: 0.08;
   --water-wave-duration: 5s;
   --water-wave-distance: -160px;
   --water-wave-stroke: 3px;
   --grid-color: color-mix(in srgb, var(--hairline) 50%, var(--canvas));
-  --shadow-feature: 0 54px 22px rgba(0,0,0,.01), 0 30px 18px rgba(0,0,0,.04), 0 13px 13px rgba(0,0,0,.08), 0 3px 7px rgba(0,0,0,.09);
+  --shadow-feature:
+    0 54px 22px rgba(0, 0, 0, 0.01), 0 30px 18px rgba(0, 0, 0, 0.04),
+    0 13px 13px rgba(0, 0, 0, 0.08), 0 3px 7px rgba(0, 0, 0, 0.09);
 }

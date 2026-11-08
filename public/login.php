@@ -2,7 +2,10 @@
 require dirname(__DIR__) . '/app/bootstrap.php';
 header('Cache-Control: no-store');
 $error = null;
-if (currentUser()) { header('Location: /'); exit; }
+if (currentUser()) {
+    header('Location: /');
+    exit;
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         checkCsrf();

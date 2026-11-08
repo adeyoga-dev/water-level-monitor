@@ -14,8 +14,8 @@ pageTitle('OVERVIEW', 'Monitor water. Stay informed.', 'Device status and water 
             <div class="card-body d-flex align-items-center p-3">
                 <span class="flow-stat-icon flow-stat-total d-flex align-items-center justify-content-center flex-shrink-0 rounded bg-light text-primary p-3 mr-3" aria-hidden="true">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                        <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/>
-                        <circle cx="12" cy="10" r="3"/>
+                        <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" />
+                        <circle cx="12" cy="10" r="3" />
                     </svg>
                 </span>
                 <div>
@@ -30,7 +30,7 @@ pageTitle('OVERVIEW', 'Monitor water. Stay informed.', 'Device status and water 
             <div class="card-body d-flex align-items-center p-3">
                 <span class="flow-stat-icon flow-stat-online d-flex align-items-center justify-content-center flex-shrink-0 rounded bg-light text-success p-3 mr-3" aria-hidden="true">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                        <path d="M4 20h3v-6H4Zm6 0h3V9h-3Zm6 0h3V4h-3Z"/>
+                        <path d="M4 20h3v-6H4Zm6 0h3V9h-3Zm6 0h3V4h-3Z" />
                     </svg>
                 </span>
                 <div>
@@ -45,8 +45,8 @@ pageTitle('OVERVIEW', 'Monitor water. Stay informed.', 'Device status and water 
             <div class="card-body d-flex align-items-center p-3">
                 <span class="flow-stat-icon flow-stat-offline d-flex align-items-center justify-content-center flex-shrink-0 rounded bg-light text-danger p-3 mr-3" aria-hidden="true">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                        <circle cx="12" cy="12" r="9"/>
-                        <path d="m6 6 12 12M9 5h6v14H9Z"/>
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="m6 6 12 12M9 5h6v14H9Z" />
                     </svg>
                 </span>
                 <div>

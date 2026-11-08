@@ -29,7 +29,9 @@ pageTitle('OVER THE AIR', 'OTA firmware', 'Publish firmware updates for all ESP3
 <div class="row">
     <div class="col-xl-4 mb-4">
         <div class="card">
-            <div class="card-header"><h2 class="h5 mb-0">Upload firmware</h2></div>
+            <div class="card-header">
+                <h2 class="h5 mb-0">Upload firmware</h2>
+            </div>
             <div class="card-body">
                 <p class="small text-muted">Latest global version: <strong><?= h($latest['version'] ?? 'Not available') ?></strong></p>
                 <form method="post" enctype="multipart/form-data">
@@ -80,7 +82,9 @@ pageTitle('OVER THE AIR', 'OTA firmware', 'Publish firmware updates for all ESP3
                             </tr>
                         <?php endforeach ?>
                         <?php if (!$firmwares): ?>
-                            <tr><td colspan="3" class="text-center text-muted py-5">No firmware has been uploaded yet.</td></tr>
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-5">No firmware has been uploaded yet.</td>
+                            </tr>
                         <?php endif ?>
                     </tbody>
                 </table>

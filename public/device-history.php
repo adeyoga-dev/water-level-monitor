@@ -77,7 +77,9 @@ pageStart('Device history', 'dashboard');
         </section>
     </div>
 </div>
-<script id="history-data" type="application/json"><?= json_encode($history, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<script id="history-data" type="application/json">
+    <?= json_encode($history, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
+</script>
 <script src="/assets/vendor/chartjs-4.6.1/chart.umd.min.js" defer></script>
 <script src="/assets/history.js" defer></script>
 <?php pageEnd(); ?>

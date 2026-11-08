@@ -9,21 +9,28 @@
   const initial = JSON.stringify([...new FormData(form)]);
   const failedSave = !!document.querySelector('.alert-danger[role="alert"]');
   let submitting = false;
-  const dirty = () => failedSave || JSON.stringify([...new FormData(form)]) !== initial;
+  const dirty = () =>
+    failedSave || JSON.stringify([...new FormData(form)]) !== initial;
   function update() {
     state.textContent = dirty() ? "Unsaved changes" : "";
   }
   form.addEventListener("input", update);
   form.addEventListener("change", update);
   form.addEventListener("submit", (event) => {
-    if (submitting) { event.preventDefault(); return; }
+    if (submitting) {
+      event.preventDefault();
+      return;
+    }
     submitting = true;
     button.disabled = true;
     button.textContent = "Saving…";
     form.setAttribute("aria-busy", "true");
   });
   window.addEventListener("beforeunload", (event) => {
-    if (!submitting && dirty()) { event.preventDefault(); event.returnValue = ""; }
+    if (!submitting && dirty()) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
   });
   window.addEventListener("pageshow", () => {
     submitting = false;

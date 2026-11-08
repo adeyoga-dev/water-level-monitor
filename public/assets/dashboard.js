@@ -7,10 +7,13 @@ async function refreshDashboard() {
   panels.setAttribute("aria-busy", "true");
   status.textContent = "Updating device readings…";
   try {
-    const response = await fetch(panels.dataset.endpoint || "/api/dashboard.php", {
-      cache: "no-store",
-      signal: controller.signal,
-    });
+    const response = await fetch(
+      panels.dataset.endpoint || "/api/dashboard.php",
+      {
+        cache: "no-store",
+        signal: controller.signal,
+      },
+    );
     if (response.status === 401 || response.status === 403) {
       dashboardAccessExpired = true;
       status.textContent = "Access ended. Sign in again to continue.";
