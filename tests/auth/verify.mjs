@@ -266,7 +266,13 @@ try {
   for (const width of [390,1440]) {
     await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<768});
     await navigate('/viewer.php');
-    assert.equal(await evaluate('document.querySelectorAll("nav a").length'), 2);
+    assert.equal(await evaluate('document.querySelectorAll("nav a").length'), 3);
+    assert.equal(await evaluate('!!document.querySelector("aside.flow-sidebar")'), false);
+    assert.equal(await evaluate('document.querySelector("nav a[aria-current=page]").textContent.trim()'), 'Dashboard');
+    assert.equal(await evaluate('document.querySelector("nav a:last-child").getAttribute("href")'), '/login.php');
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".flow-viewer-header")).justifyContent'), 'flex-start');
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".flow-viewer-header")).gap'), '16px');
+    assert.equal(await evaluate('getComputedStyle(document.querySelector(".flow-viewer-nav")).gap'), '8px');
     assert.equal(await evaluate('!!document.querySelector("a[href*=device-history], #stat-logs, form")'),false);
     await waitFor('document.querySelector("#refresh-status").textContent.startsWith("Updated ")');
     assert.equal(await evaluate('document.querySelector("#stat-online").textContent === document.querySelector("#stat-total").textContent'),true);
@@ -274,6 +280,8 @@ try {
     assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth + 1'),false);
     await writeFile(path.join(taskDir,'screenshots','viewer-'+width+'.png'),Buffer.from((await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true})).data,'base64'));
     await navigate('/viewer-maps.php');
+    assert.equal(await evaluate('document.querySelector("nav a[aria-current=page]").textContent.trim()'), 'Maps');
+    assert.equal(await evaluate('!!document.querySelector("aside.flow-sidebar")'), false);
     await waitFor('!document.querySelector("[data-map-device]").disabled');
     await evaluate('document.querySelector("[data-map-device]").click()');
     await waitFor('!!document.querySelector(".leaflet-popup-content")');
@@ -286,7 +294,10 @@ try {
     await viewerView;
     assert.equal(await evaluate('location.pathname'), '/viewer.php');
     assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth + 1'),false);
-    await navigate('/login.php');
+    const openLogin = loaded();
+    await evaluate('document.querySelector(".flow-viewer-nav a:last-child").click()');
+    await openLogin;
+    assert.equal(await evaluate('location.pathname'), '/login.php');
     assert.equal(await evaluate(`document.documentElement.scrollWidth > innerWidth+1`),false);
     await evaluate(`document.querySelector('#email').value='admin@example.test';document.querySelector('#password').value='StrongPassword123!';`);
     const done=loaded();await evaluate(`document.querySelector('form').requestSubmit()`);await done;

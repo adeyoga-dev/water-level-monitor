@@ -1,5 +1,9 @@
 # Verifikasi Implementasi
 
+## Header viewer — 8 November 2026
+
+Viewer tanpa sidebar memakai logo Flow dan tombol Dashboard, Maps, Login rata kiri. Konten selebar halaman; header gap 16 px dan navigasi gap 8 px memakai tokens. Pemeriksaan PHP syntax dan diff whitespace lulus. Browser terisolasi lebar 390/1440 px lulus untuk navigasi aktif, tautan Login, polling, Maps, akses Admin, serta tidak ada overflow. Screenshot mobile diperiksa. Runner khusus `temp/viewer-header/verify.mjs` memakai harness autentikasi dan melewati pemeriksaan popup zoom lama karena fixture masih mengharapkan Zoom out, sementara implementasi pengguna sekarang Zoom in; perilaku zoom tidak diubah dalam tugas header.
+
 ## Viewer publik — 7 November 2026
 
 Dashboard `/viewer.php` dan Maps `/viewer-maps.php` dapat dibuka tanpa login. Pengujian pada database terisolasi lulus: GET viewer/polling, POST ditolak 405, akses langsung halaman dan API admin tetap ditolak meskipun memakai `viewer=1`, tidak ada tautan history/edit atau Saved logs, badge viewer selalu Online, dan status admin tetap mengikuti data. Snapshot empat tabel bisnis sebelum/sesudah akses viewer serta percobaan tulis yang ditolak identik. Tidak ada migrasi database.

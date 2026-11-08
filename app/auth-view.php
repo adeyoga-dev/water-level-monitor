@@ -10,6 +10,9 @@
 <form method="post"><input type="hidden" name="csrf" value="<?= h(csrf()) ?>">
 <div class="form-group"><label for="email">Email</label><input class="form-control" id="email" name="email" type="email" required maxlength="249" autocomplete="username" value="<?= h(is_string($_POST['email'] ?? '') ? ($_POST['email'] ?? '') : '') ?>"></div>
 <div class="form-group"><label for="password">Password</label><input class="form-control" id="password" name="password" type="password" required autocomplete="current-password"></div>
+<div class="flow-auth-actions d-flex align-items-center">
 <button class="btn btn-primary" type="submit">Sign in</button>
+<a class="btn btn-outline-secondary" href="/viewer.php">Viewer</a>
+</div>
 </form>
 </div></div></section></div></main><script src="/assets/auth-forms.js" defer></script></body></html>

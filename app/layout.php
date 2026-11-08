@@ -26,6 +26,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
     <body class="bg-light">
         <div class="container-fluid">
             <div class="row min-vh-100">
+                <?php if (!$viewer): ?>
                 <aside class="flow-sidebar col-md-3 col-lg-2 bg-white border-right p-3">
                     <a class="flow-logo h3 d-flex align-items-center mb-1 text-primary text-decoration-none" href="<?= $viewer ? '/viewer.php' : '/' ?>" aria-label="Flow — Dashboard">
                         <img class="flow-brand-mark" src="/assets/images/flow-mark.svg" width="36" height="36" alt="" aria-hidden="true">
@@ -40,12 +41,25 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                             <?php endforeach ?>
                         </nav>
                     </details>
-                    <p class="small text-muted border-top pt-3 mt-4 mb-0">monitoring<br><?= h(config('APP_TIMEZONE', 'Asia/Jakarta')) ?></p>
                 </aside>
-                <div class="col-md-9 col-lg-10 d-flex flex-column px-0">
+                <?php endif ?>
+                <div class="<?= $viewer ? 'col-12' : 'col-md-9 col-lg-10' ?> d-flex flex-column px-0">
+                    <?php if ($viewer): ?>
+                    <header class="flow-viewer-header border-bottom">
+                        <a class="flow-logo h3 d-flex align-items-center text-decoration-none mb-0" href="/viewer.php" aria-label="Flow Dashboard">
+                            <img class="flow-brand-mark" src="/assets/images/flow-mark.svg" width="36" height="36" alt="" aria-hidden="true">
+                            <span>Flow</span>
+                        </a>
+                        <nav class="flow-viewer-nav" aria-label="Viewer navigation">
+                            <?php foreach ($navigation as $key => $item): ?>
+                                <a class="btn <?= $active === $key ? 'btn-primary' : 'btn-outline-secondary' ?>" href="<?= $item[0] ?>" <?= $active === $key ? 'aria-current="page"' : '' ?>><?= $item[1] ?></a>
+                            <?php endforeach ?>
+                            <a class="btn btn-outline-secondary" href="/login.php">Login</a>
+                        </nav>
+                    </header>
+                    <?php else: ?>
                     <header class="flow-topbar bg-white border-bottom px-3 px-lg-4 py-3 d-flex flex-wrap justify-content-between align-items-center">
                         <span class="text-muted">Monitoring system / <strong class="text-dark"><?= h($title) ?></strong></span>
-                        <?php if ($viewer): ?><span class="badge badge-primary">Viewer</span><?php else: ?>
                         <div class="d-flex align-items-center">
                             <span class="small d-flex align-items-center mr-3">
                                 <svg class="mr-2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -55,8 +69,8 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                             </span>
                             <form method="post" action="/logout.php"><input type="hidden" name="csrf" value="<?= h(csrf()) ?>"><button class="btn btn-outline-secondary" type="submit">Logout</button></form>
                         </div>
-                        <?php endif ?>
                     </header>
+                    <?php endif ?>
                     <main class="flow-main p-3 p-lg-4 flex-grow-1">
                         <?php if ($flash): ?><div class="alert alert-success" role="status"><?= h($flash) ?></div><?php endif ?>
                     <?php
@@ -221,11 +235,11 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                             <p class="flow-level mb-0 mt-2 text-break"><strong class="h2"><?= $level === null ? '—' : h(number_format($level, 1)) ?></strong> <span class="text-muted">cm</span></p>
                             <small class="text-muted">Display scale: <?= h(number_format($minimum, 1)) ?>–<?= h(number_format($maximum, 1)) ?> cm</small>
                         </div>
-                        <div class="col-sm-5 text-sm-right">
+                        <?php if (!$viewer): ?><div class="col-sm-5 text-sm-right">
                             <small class="text-muted d-block">Last measurement</small>
                             <span><?= h($device['last_seen_display']) ?></span>
                             <?php if (!$viewer && !$device['device_status'] && $level !== null): ?><small class="d-block text-muted">Last recorded reading · device is offline</small><?php endif ?>
-                        </div>
+                        </div><?php endif ?>
                     </div>
                     <?php foreach (count($devices) === 1 && !$detailView ? [1000 => 'd-none d-md-block', 420 => 'd-md-none'] : [420 => 'd-block'] as $width => $visibility): ?>
                         <?php $graphicId = 'water-level-' . (int) $device['id'] . '-' . $width; ?>

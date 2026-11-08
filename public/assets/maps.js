@@ -122,7 +122,8 @@
     actions.className = "d-flex flex-wrap flow-map-actions";
     actions.append(primaryActions);
     if (container.dataset.viewer !== "true") actions.append(edit);
-    popup.append(title, badge, reading, location, seen);
+    popup.append(title, badge, reading, location);
+    if (container.dataset.viewer !== "true") popup.append(seen);
     popup.append(actions);
     const marker = L.marker([device.latitude, device.longitude], {
       title: `${device.device_id} · ${device.online ? "Online" : "Offline"}`,
