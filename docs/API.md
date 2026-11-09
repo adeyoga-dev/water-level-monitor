@@ -21,7 +21,7 @@ Gunakan `Content-Type: application/json`. Ukuran body maksimum 16 KB.
 
 | Field              | Validasi                                                                                      |
 | ------------------ | --------------------------------------------------------------------------------------------- |
-| `device_id`        | Wajib berupa string: 1â€“64 huruf ASCII, angka, `-`, atau `_`                                 |
+| `device_id`        | Wajib berupa string: 164 huruf ASCII, angka, `-`, atau `_`                                    |
 | `water_level`      | Wajib berupa nilai numerik terbatas dalam cm; mendukung desimal                               |
 | `device_status`    | Wajib berupa integer JSON `0` atau `1`; kirim `1` saat beroperasi                             |
 | `firmware_version` | Opsional dengan format `vMAJOR.MINOR.PATCH`; versi tersimpan dipertahankan jika tidak dikirim |
@@ -138,7 +138,7 @@ Halaman detail secara default memakai 30 hari terakhir termasuk hari ini berdasa
 `GET /api/device-history.php?device_id=ESP32-001&from=2026-01-01&to=2026-12-31&group_by=auto`
 
 - `from` dan `to` wajib berpasangan dalam format tanggal kalender `YYYY-MM-DD`, keduanya inklusif dalam zona waktu aplikasi. Rentang tanggal yang didukung `1000-01-01` hingga `9999-12-30`; awal tidak boleh melewati akhir.
-- `group_by`: `auto` (default), `minute`, `hour`, `day`, `month`, atau `year`. Auto memakai jam untuk satu hari, hari untuk 2â€“62 hari, bulan untuk 63â€“731 hari, dan tahun untuk rentang lebih panjang. Pilihan **Minute** menampilkan satu interval per menit dan mensyaratkan `from` serta `to` pada tanggal yang sama; memakai dua tanggal berbeda menghasilkan `422` dengan petunjuk memilih satu tanggal.
+- `group_by`: `auto` (default), `minute`, `hour`, `day`, `month`, atau `year`. Auto memakai jam untuk satu hari, hari untuk 262 hari, bulan untuk 63731 hari, dan tahun untuk rentang lebih panjang. Pilihan **Minute** menampilkan satu interval per menit dan mensyaratkan `from` serta `to` pada tanggal yang sama; memakai dua tanggal berbeda menghasilkan `422` dengan petunjuk memilih satu tanggal.
 - Pada halaman grafik, validasi Minute dijalankan saat **Apply filters** ditekan. Jika tanggal berbeda, Bootstrap alert ditampilkan dan diberi fokus tanpa mengirim request. Teks bantuan permanen tidak ditampilkan. Input dan grafik terakhir dipertahankan; mengedit filter menutup alert. Validasi server tetap berlaku untuk request langsung.
 - Agregasi mencakup **seluruh** log perangkat dalam periode, tanpa batas 500 log raw. Mode menit mendukung satu hari penuh (1.440 interval, hingga 1.500 pada hari DST 25 jam). Pengelompokan lain yang menghasilkan lebih dari 500 interval ditolak dengan `422`; pilih rentang lebih pendek atau interval lebih besar. Data tidak dipotong diam-diam.
 - `filters` berisi pilihan tanggal dan pengelompokan yang diminta; `aggregation` berisi interval aktual. `limit` menjadi `null`, `reading_count` adalah jumlah seluruh pembacaan terpilih, dan `period` berisi batas sumbu `from`/`to` UTC milidetik.

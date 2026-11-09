@@ -16,7 +16,7 @@ Session PHP native memakai ADMIN_EMAIL/ADMIN_PASSWORD dari konfigurasi; tidak ad
 
 Pengujian session terpisah mencakup session lama, kedaluwarsa delapan jam, pergantian kredensial, konfigurasi kosong, pembatasan lintas session, dan jendela waktu throttling. Cleanup database aplikasi belum dijalankan; membutuhkan persetujuan eksplisit. Kredensial Admin pada .env perlu diisi pengguna.
 
-## Tema Flow / Webflow â€” 6 November 2026
+## Tema Flow / Webflow 6 November 2026
 
 Identitas Flow memakai logo tiga gelombang putih pada kotak hitam, tersimpan di `public/assets/images/flow-mark-blue.svg`. Layout bersama memakainya untuk sidebar (36 px), footer (24 px), dan favicon SVG seluruh halaman. Ukuran mengikuti design tokens; gambar dekoratif didampingi teks Flow dan tautan sidebar memiliki nama aksesibel. Tidak membutuhkan CDN, build, atau perubahan logic aplikasi.
 
@@ -51,7 +51,7 @@ Toolchain dan board ESP32 tidak tersedia. Kompilasi untuk board sebenarnya, leng
 
 Perubahan bahasa dokumentasi tidak mengubah kode aplikasi. Hasil 53 pemeriksaan di atas berasal dari verifikasi implementasi sebelumnya.
 
-## Konversi Bootstrap â€” 5 November 2026
+## Konversi Bootstrap 5 November 2026
 
 Seluruh halaman memakai Bootstrap 4.6.2 lokal dari `public/assets/vendor/bootstrap-4.6.2-dist/`. Folder distribusi dipindahkan dari root proyek tanpa mengubah isi vendor. Stylesheet khusus, font eksternal, dan Bootstrap CDN dihapus. Menu kiri menggunakan grid Bootstrap dan berpindah ke atas konten pada ponsel.
 
@@ -63,7 +63,7 @@ Seluruh halaman memakai Bootstrap 4.6.2 lokal dari `public/assets/vendor/bootstr
 
 Fixture merender template aplikasi dengan data buatan dan tidak memuat `.env`, menjalankan query database, atau memproses publikasi firmware. Pengujian integrasi MySQL/HTTP terhadap aplikasi sebenarnya tidak diulang pada konversi tampilan ini. Hasil ini tidak membuktikan komunikasi atau OTA pada ESP32 fisik. Tidak ada migrasi database untuk perubahan ini.
 
-## Panel muka air â€” 5 November 2026
+## Panel muka air 5 November 2026
 
 Bagian `Your devices` pada dashboard diganti panel SVG dengan pembacaan cm, status Online/Offline, waktu terakhir, dan tiga rentang Siaga dari pengaturan perangkat. Tombol detail/riwayat membuka halaman detail dengan grafik Chart.js sebagaimana dijelaskan di bagian berikutnya. Informasi `Kualitas Data: SIMULATOR` tidak ditampilkan. Komponen halaman tetap memakai Bootstrap 4.6.2 tanpa stylesheet tambahan. Halaman Devices tetap menggunakan tabel.
 
@@ -77,7 +77,7 @@ Bagian `Your devices` pada dashboard diganti panel SVG dengan pembacaan cm, stat
 
 Pemeriksaan memakai data buatan tanpa koneksi database. Integrasi database dan perangkat fisik tidak dijalankan. Skala grafik bersifat otomatis, tidak menunjukkan kapasitas fisik. Tidak ada perubahan schema atau kontrak telemetry ESP32.
 
-## Grafik riwayat Chart.js â€” 5 November 2026
+## Grafik riwayat Chart.js 5 November 2026
 
 - Integrasi MySQL/HTTP lulus **68 pemeriksaan**, mencakup seluruh pengujian sebelumnya serta endpoint/page riwayat, timestamp UTC dalam milidetik, urutan waktu/ID, batas 500 pembacaan, kondisi kosong, metode/identifier invalid, tidak adanya efek tulis pada GET/penolakan, pemisahan log antarperangkat, dan klasifikasi historis yang tidak berubah saat rentang diedit.
 - Pengujian memakai MariaDB 10.4.32 sementara dengan data directory baru di `temp/history-chart/`, port loopback acak, serta database acak berawalan `water_level_test_`. Identitas data directory diverifikasi sebelum pengujian. Semua konfigurasi koneksi PHP dan server HTTP diarahkan ke instance ini melalui environment proses; database aplikasi tidak diakses.
@@ -85,27 +85,27 @@ Pemeriksaan memakai data buatan tanpa koneksi database. Integrasi database dan p
 - Chart.js disajikan langsung dari `public/assets/vendor/chartjs-4.6.1/chart.umd.min.js` tanpa intersepsi byte library. Akses HTTPS diblokir selama pengujian untuk memverifikasi penggunaan offline. Kegagalan pemuatan library lokal juga diuji. Screenshot, hasil browser, dan output integrasi tersedia di `temp/history-chart/`.
 - Instance database dan profil Chrome sementara dihentikan/dibersihkan setelah pengujian. Tidak ada migrasi aplikasi yang dijalankan. Perangkat ESP32 fisik tidak diuji.
 
-## Filter periode grafik â€” 6 November 2026
+## Filter periode grafik 6 November 2026
 
 - Default ketika membuka detail dari dashboard adalah 30 hari terakhir termasuk hari ini. Pemeriksaan browser desktop/ponsel memastikan kedua input tanggal sesuai periode lokal tersebut, grafik memiliki 30 interval harian, serta pilihan periode eksplisit dan tombol Today tetap bekerja.
-- Integrasi logika/MySQL/HTTP lulus **89 pemeriksaan**. Tambahan mencakup tanggal awalâ€“akhir inklusif dalam zona aplikasi, pengelompokan jam/hari/bulan/tahun, rata-rata berbobot pembacaan, minimum/maksimum, seluruh data melampaui batas raw 500 log, celah bernilai null, tahun kabisat, jam DST berulang, pemisahan perangkat, validasi tanggal/interval, dan GET tanpa efek tulis.
+- Integrasi logika/MySQL/HTTP lulus **89 pemeriksaan**. Tambahan mencakup tanggal awalakhir inklusif dalam zona aplikasi, pengelompokan jam/hari/bulan/tahun, rata-rata berbobot pembacaan, minimum/maksimum, seluruh data melampaui batas raw 500 log, celah bernilai null, tahun kabisat, jam DST berulang, pemisahan perangkat, validasi tanggal/interval, dan GET tanpa efek tulis.
 - Chrome headless lokal lulus **20 pemeriksaan** untuk grafik offline dan layout desktop/ponsel, filter dan URL periode, label sumbu horizontal yang dibatasi sesuai lebar layar, ketiga seri agregat, kegagalan jaringan/timeout, draft yang bertahan saat gagal, pembatalan request usang, polling dijeda selama draft, konfirmasi Today yang dibatalkan/diterima, validasi kepadatan titik, serta pemulihan library lokal.
 - Pengujian memakai server PHP aplikasi sebenarnya, Chart.js lokal tanpa perubahan, dan data buatan dalam instance MariaDB sementara dengan identitas data directory yang diverifikasi. Database aplikasi serta perangkat fisik tidak diuji. Akses HTTPS diblokir selama browser checks.
 - Hasil terperinci di `temp/history-chart/integration.log` dan `temp/history-chart/verification.json`; screenshot `day-trend.png`, `month-trend.png`, `year-trend.png`, serta `mobile-daily-trend.png` berada di `temp/history-chart/screenshots/`. Database/profil browser sementara dibersihkan setelah pengujian. Tidak ada migrasi atau perubahan konfigurasi yang diperlukan.
 
-## Siaga 3 tanpa batas atas dan label ringkas â€” 6 November 2026
+## Siaga 3 tanpa batas atas dan label ringkas 6 November 2026
 
 - **13 pemeriksaan logika tanpa database** dan **97 pemeriksaan logika/MySQL/HTTP** lulus. Tambahan mencakup batas bawah Siaga 3 inklusif, pembacaan jauh di atas batas, penolakan batas atas/batas bawah kosong melalui form tanpa efek tulis, klasifikasi telemetry dengan konfigurasi lama, serta penyimpanan ulang batas atas sebagai `NULL`.
 - **24 pemeriksaan browser** lulus pada server PHP dan database sementara yang terisolasi. Tambahan memverifikasi form Siaga 3 hanya memiliki batas bawah wajib, label SVG font 11 dengan kotak 68 Ã— 18, legenda hanya `â‰¥`, klasifikasi pembacaan 99 cm dengan batas lama 50 cm, serta layout desktop/ponsel tanpa overflow. Screenshot ada di `temp/history-chart/screenshots/desktop-siaga-labels.png` dan `mobile-siaga-labels.png`.
 - Tidak ada perubahan data aplikasi, migrasi, atau pengujian perangkat fisik. Aturan baru diterapkan pada pembacaan baru dan indikator; klasifikasi log historis dipertahankan.
 
-## Validasi batas antar-Siaga â€” 6 November 2026
+## Validasi batas antar-Siaga 6 November 2026
 
 - **17 pemeriksaan logika tanpa database** dan **105 pemeriksaan logika/MySQL/HTTP** lulus. Batas atas Siaga 1 tidak boleh sama dengan batas bawah Siaga 2; batas atas Siaga 2 tidak boleh sama dengan batas bawah Siaga 3. Kasus angka ekuivalen (`20`/`20.00`), nol, dan selisih desimal diuji. Pembuatan maupun perubahan perangkat dengan batas sama ditolak tanpa mengubah perangkat/rentangnya.
 - **28 pemeriksaan browser** lulus, termasuk submit kedua pasangan batas yang sama pada desktop dan ponsel, pesan spesifik tiap pasangan, input tetap tersedia setelah gagal, dan tidak ada overflow. Pengujian memakai server PHP sebenarnya dan instance MariaDB sementara yang identitasnya diverifikasi; database aplikasi tidak diakses.
-- Contoh rentang di form/dokumentasi disesuaikan menjadi tanpa batas bawahâ€“19, 20â€“39, serta â‰¥ 40 cm. Batas atas tetap eksklusif, sehingga nilai pada celah tidak diklasifikasikan. Data lama tetap dapat dibaca, tetapi harus memenuhi validasi baru sebelum pengaturan disimpan ulang. Tidak perlu migrasi.
+- Contoh rentang di form/dokumentasi disesuaikan menjadi tanpa batas bawah19, 2039, serta â‰¥ 40 cm. Batas atas tetap eksklusif, sehingga nilai pada celah tidak diklasifikasikan. Data lama tetap dapat dibaca, tetapi harus memenuhi validasi baru sebelum pengaturan disimpan ulang. Tidak perlu migrasi.
 
-## Tren per menit â€” 6 November 2026
+## Tren per menit 6 November 2026
 
 - **111 pemeriksaan logika/MySQL/HTTP** lulus, termasuk agregasi menit dari seluruh pembacaan, rata-rata/minimum/maksimum/jumlah sampel, batas hari dalam zona lokal, interval kosong bernilai null, jarak waktu 60 detik, penolakan rentang lebih dari satu tanggal, dan 1.500 menit pada hari DST 25 jam.
 - **32 pemeriksaan browser** lulus menggunakan server PHP aplikasi dan MariaDB sementara yang terisolasi. Mode Minute menampilkan 1.440 interval dengan label `HH:mm`, tooltip tanggal lengkap, titik terisolasi yang terlihat, serta pemulihan setelah validasi rentang. Validasi saat Apply menampilkan Bootstrap alert dengan fokus, tanpa request API, dan mempertahankan input/grafik; teks bantuan permanen tidak ditampilkan. Kondisi kosong dan layout desktop/ponsel tanpa overflow turut diverifikasi. Screenshot tersedia di `temp/history-chart/screenshots/desktop-minute-trend.png` dan `mobile-minute-trend.png`.

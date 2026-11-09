@@ -62,7 +62,7 @@ Schema sebelumnya memakai nama tabel rentang dalam bahasa Indonesia. Jika sudah 
 
 - URL Admin: `/maps.php`, input lokasi pada `/device-edit.php?id=ID` melalui menu Perangkat; keduanya memerlukan login Admin. Pengunjung tanpa login memakai `/viewer-maps.php` dan tidak dapat mengubah lokasi. Owner/PIC, departemen, dan maintainer: Not confirmed.
 - Leaflet **1.9.4 stable** disimpan lokal di `public/assets/vendor/leaflet-1.9.4/` dengan lisensi BSD-2-Clause. Peta dasar memakai `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, dengan atribusi OpenStreetMap yang tetap terlihat. Gambar peta memerlukan internet; tidak disediakan pengunduhan offline/prefetch massal. Ikuti [kebijakan tile OSM](https://operations.osmfoundation.org/policies/tiles/).
-- Tampilan awal mencakup Indonesia (batas tampilan sekitar 94,5â€“141,5 BT dan 11,5 LSâ€“6,5 LU), termasuk jika belum ada perangkat berkoordinat. Peta tidak otomatis memperbesar kumpulan pin saat dibuka.
+- Tampilan awal mencakup Indonesia (batas tampilan sekitar 94,5141,5 BT dan 11,5 LS6,5 LU), termasuk jika belum ada perangkat berkoordinat. Peta tidak otomatis memperbesar kumpulan pin saat dibuka.
 - Paste pasangan angka `latitude, longitude` dari Google Maps menggunakan titik desimal, misalnya `-7.566712, 110.833458`. Link berbagi Google Maps tidak diproses. Latitude valid -90 sampai 90; longitude -180 sampai 180; koordinat nol valid. Presisi penyimpanan tujuh angka desimal.
 - Lokasi opsional. Mengosongkan field menghapus lokasi saat ini. Update ditransaksikan bersama konfigurasi device. Tidak ada tabel/audit riwayat lokasi dan tidak ada penulisan ke `sensor_logs` karena edit koordinat.
 - Nama perangkat, status Online/Offline, level air, Siaga, dan pengukuran terakhir tersedia di popup. Daftar juga menampilkan perangkat tanpa koordinat. Show on map memperbesar pin; Show Indonesia kembali ke tampilan awal. Status/koordinat merupakan snapshot saat halaman dibuka; Reload data memuat versi terbaru.
@@ -141,7 +141,7 @@ Nama Pos Pantau adalah identitas utama pada dashboard Admin/viewer, peta dan pop
 Instalasi baru sudah memiliki `devices.station_name` pada `schema.sql`. Database lama membutuhkan `database/migrations/004_station_name.sql`: preview `php scripts/migrate-station-name.php`, lalu setelah persetujuan eksplisit jalankan dengan `--apply`. Kolom nullable untuk mempertahankan data lama tanpa mengarang nama; tampilan memakai “Pos pantau belum dinamai” sampai Admin mengisinya melalui Ubah perangkat. Pada database lokal `water_level_detection`, migrasi telah dijalankan dengan persetujuan pengguna pada 9 November 2026 dan data bisnis lama diverifikasi tetap utuh. Instalasi lain perlu diperiksa melalui mode preview sebelum migrasi.
 
 1. Buka **Devices â†’ Add device**.
-2. Isi ID unik yang membedakan huruf besar/kecil, misalnya `ESP32-001`: 1â€“64 huruf ASCII, angka, `-`, atau `_`.
+2. Isi ID unik yang membedakan huruf besar/kecil, misalnya `ESP32-001`: 164 huruf ASCII, angka, `-`, atau `_`.
 3. Atur threshold alarm dalam cm, interval pengiriman, dan sakelar buzzer.
 4. Isi ketiga rentang Siaga, misalnya:
 
