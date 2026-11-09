@@ -55,9 +55,24 @@ pageTitle('PENGATURAN PERANGKAT', $id ? 'Ubah perangkat' : 'Tambah perangkat', '
                         <small class="form-text text-muted" id="device-id-help">Harus sama persis dengan ID pada firmware ESP32. Tidak dapat diubah setelah dibuat.</small>
                     </div>
                     <div class="form-group">
-                        <label for="device-coordinates">Koordinat lokasi</label>
-                        <input class="form-control" id="device-coordinates" name="coordinates" maxlength="100" placeholder="M7CM+GJ5 Sukaluyu, Karawang, West Java" value="<?= h(is_string($values['coordinates'] ?? '') ? ($values['coordinates'] ?? '') : '') ?>" aria-describedby="coordinates-help" autocomplete="off" spellcheck="false">
-                        <small class="form-text text-muted" id="coordinates-help">Tempel Plus Code dari Google Peta. Kosongkan untuk menghapus lokasi. Hanya lokasi saat ini yang disimpan.</small>
+                        <label for="device-coordinates">Koordinat lokasi (Latitude, Longitude)</label>
+                        <input
+                            class="form-control"
+                            id="device-coordinates"
+                            name="coordinates"
+                            type="text"
+                            maxlength="100"
+                            pattern="\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)\s*,\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)\s*"
+                            title="Masukkan Latitude, Longitude. Contoh: -6.3215000, 107.3376000"
+                            placeholder="-6.3215000, 107.3376000"
+                            value="<?= h(is_string($values['coordinates'] ?? '') ? $values['coordinates'] : '') ?>"
+                            aria-describedby="coordinates-help"
+                            autocomplete="off"
+                            spellcheck="false">
+                        <small class="form-text text-muted" id="coordinates-help">
+                            Masukkan Latitude, Longitude dari Google Maps. Contoh: -6.3215000, 107.3376000.
+                            Kosongkan untuk menghapus lokasi.
+                        </small>
                         <a class="small d-inline-block mt-2" href="/maps.php">Lihat lokasi perangkat →</a>
                     </div>
                     <fieldset class="form-group" aria-describedby="interval-help">
