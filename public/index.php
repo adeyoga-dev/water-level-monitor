@@ -57,7 +57,7 @@ pageStart('Dasbor', 'dashboard', $viewer);
         </article>
     </div>
 </div>
-<!-- <p class="small text-muted" id="refresh-status" role="status" aria-live="polite">Diperbarui setiap 5 detik</p> -->
+<p class="sr-only" id="refresh-status" role="status" aria-live="polite">Diperbarui setiap 5 detik</p>
 <div class="row" id="water-level-panels" data-endpoint="<?= $viewer ? '/api/viewer-dashboard.php' : '/api/dashboard.php' ?>" aria-busy="false"><?php waterLevelPanels($devices, false, $viewer) ?></div>
 <script src="/assets/dashboard.js" defer></script>
 <?php pageEnd(); ?>
