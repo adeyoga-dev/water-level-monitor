@@ -1,102 +1,99 @@
-# Contoh Firmware ESP32
+# Firmware ESP32 — tinggi air A01ANYUB V2
 
-Sketch: `WaterLevelMonitor/WaterLevelMonitor.ino`.
+Terakhir diperbarui: 9 November 2026. Peminta: pengguna proyek; departemen, owner/PIC dan maintainer: Not confirmed. Pengguna: operator ESP32 dan Admin SIPATA. Dokumen menjelaskan implementasi saat ini, bukan jaminan hasil uji perangkat fisik.
 
-## Persiapan
+## Persiapan dan identitas
 
-1. Install Arduino IDE dan **Arduino ESP32 core 3.x** melalui Boards Manager.
-2. Install **ArduinoJson 7.x** melalui Library Manager. WiFi, HTTPClient, Update, dan mbedTLS tersedia dalam core ESP32.
-3. Pilih board sebenarnya dan skema partisi yang mendukung OTA dengan dua slot aplikasi yang cukup besar untuk binary. Jangan gunakan skema No OTA.
-4. Isi `WIFI_SSID`, `WIFI_PASSWORD`, `SERVER_URL`, `DEVICE_ID`, `FIRMWARE_VERSION`, `SENSOR_MOUNT_HEIGHT_CM`, `BUZZER_PIN`, dan polaritas buzzer. `SERVER_URL` harus IP komputer/server yang dapat dijangkau ESP32, bukan `localhost`.
-5. Daftarkan `DEVICE_ID` yang sama persis pada menu **Perangkat**, termasuk huruf besar/kecil. **Nama Pos Pantau** adalah nama tampilan yang dapat diubah; bukan pengganti `DEVICE_ID` dalam sketch atau payload API.
+Sketch: `esp32/WaterLevelMonitor/WaterLevelMonitor.ino`. Target pada komentar kode adalah ESP32 Dev Module dengan framework Arduino, melalui PlatformIO. Kode memakai ArduinoJson 7.x serta WiFi, HTTPClient, Update, HardwareSerial, Preferences, mbedTLS, esp_sleep dan gpio dari lingkungan ESP32. Ada percabangan fungsi SHA untuk Arduino ESP32 core 2.x/3.x; kompatibilitas build belum diuji di lingkungan ini. Pilih board dan partisi dua slot aplikasi yang mendukung OTA. Firmware pertama diunggah melalui USB.
 
-### Contoh pengaturan sebelum upload
+Isi Wi-Fi pada sketch tanpa menyalin kredensial ke dokumentasi. `DEVICE_ID` saat ini `ESP-001` dan harus sama persis dengan ID di menu Perangkat; Nama Pos Pantau hanya identitas tampilan. `FIRMWARE_VERSION` saat ini `v1.0.0`.
 
-```cpp
-const char* WIFI_SSID = "NamaWifi";
-const char* WIFI_PASSWORD = "PasswordWifi";
-const String SERVER_URL = "http://192.168.1.10:8000";
-const String DEVICE_ID = "ESP32-001";
-const float SENSOR_MOUNT_HEIGHT_CM = 200.0f;
+Samakan `SERVER_URL` dengan `APP_URL` web, termasuk protokol, host dan port, tanpa garis miring penutup. Gunakan alamat yang dapat dijangkau ESP32, bukan localhost. Document root web adalah `public/`. Sketch menggunakan WiFiClient/HTTP; mengganti URL menjadi HTTPS saja belum menyiapkan TLS. Akun Admin hanya untuk browser; endpoint perangkat tidak membutuhkan login Admin.
+
+## Pin dan konstanta saat ini
+
+| Pengaturan | Nilai | Peran |
+| --- | --- | --- |
+| SENSOR_RX_PIN | GPIO 16 | RX UART2 ESP32, menerima TX sensor |
+| SENSOR_TX_PIN | GPIO 17 | TX UART2 ESP32, menuju RX sensor menurut wiring pada komentar sketch |
+| SENSOR_BAUD | 9600, 8N1 | Komunikasi sensor |
+| Buffer RX | 1024 byte | Diatur sebelum UART dimulai |
+| BUZZER_PIN | GPIO 32 | Output buzzer/masukan kendali relay yang sesuai |
+| BUZZER_ACTIVE_HIGH | false | LOW aktif, HIGH mati |
+| SENSOR_MOUNT_HEIGHT_CM | 700 cm | Jarak muka sensor ke acuan tinggi air nol |
+| SENSOR_MIN_DISTANCE_CM | 28 cm | Batas bawah yang diterima kode, inklusif |
+| SENSOR_MAX_DISTANCE_CM | 750 cm | Batas atas yang diterima kode, inklusif |
+| SENSOR_STALE_MS | 3000 ms | Usia maksimum frame valid saat perhitungan tinggi |
+| SENSOR_INTERVAL_MS | 5000 ms | Interval menghitung tinggi dan mengevaluasi buzzer |
+| SENSOR_WARMUP_MS | 2000 ms | Penjadwalan perhitungan pertama setelah startup |
+| OTA_RETRY_MS | 300000 ms | Jeda minimum percobaan ulang OTA |
+
+Komentar wiring terbaru menyebut putih/TX sensor ke GPIO 16 dan kuning/RX sensor ke GPIO 17. Cocokkan dengan label/datasheet unit serta board yang digunakan; warna kabel bukan identifikasi universal. GPIO ESP32 membutuhkan level sinyal yang sesuai. Kode UART ini tidak menggunakan Trig/Echo atau mengirim perintah polling ke sensor.
+
+## Pengukuran dan data yang dikirim
+
+`bacaJarak()` mencari frame empat byte `FF DATA_H DATA_L SUM`. Checksum harus sama dengan `(FF + DATA_H + DATA_L) & 0xFF`. Jarak mm adalah `(DATA_H << 8) | DATA_L`, lalu dibagi 10 menjadi cm. `pollSensor()` berjalan terus selama loop dan juga selama download OTA; hanya jarak 280 sampai 7500 mm yang menggantikan cache valid.
+
+`readWaterLevelCm()` memakai cache terakhir. Jika belum ada nilai valid atau usianya lebih dari 3000 ms, hasilnya NAN. Jika valid:
+
+```text
+tinggi air = max(0, 700 − jarak sensor dalam cm)
 ```
 
-Ganti contoh Wi-Fi dengan jaringan yang dapat menjangkau server. Samakan `SERVER_URL` tanpa garis miring penutup dengan `APP_URL` di `.env`, termasuk protokol, host, dan port. IP di atas hanya contoh, bukan hasil deteksi jaringan. Server harus melayani folder `public` sebagai document root.
+Contoh: jarak 180 cm menghasilkan tinggi 520 cm. Nilai 700 harus sesuai pengukuran pemasangan, bukan disesuaikan agar alarm berbunyi. Jarak lebih dari tinggi pemasangan menghasilkan tinggi nol. Tidak ada validasi rentang konstanta pemasangan di fungsi ini.
 
-```dotenv
-APP_URL=http://192.168.1.10:8000
+Tidak ada median lima sampel, minimum tiga sampel, timeout koleksi 1,8 detik, reset jeda byte 50 ms, atau pembuangan buffer lama seperti versi sebelumnya. Tepat 28 cm diterima oleh implementasi saat ini; dokumentasi ini tidak menyatakan batas blind zone tersebut dapat diukur secara andal secara fisik. Frame salah/di luar rentang diabaikan; cache lama dapat tetap dipakai sampai dianggap basi pada evaluasi berikutnya. Karena perhitungan dilakukan setiap 5 detik, buzzer tidak dijamin berubah tepat pada detik ketiga setelah frame terakhir.
+
+Serial Monitor 115200 baud mencetak `Tinggi air: ... cm`. Telemetry hanya membawa tinggi air, dibulatkan satu desimal sebelum serialisasi:
+
+```json
+{
+    "device_id": "ESP-001",
+    "water_level": 520.0,
+    "device_status": 1,
+    "firmware_version": "v1.0.0"
+}
 ```
 
-Web membentuk `ota_url` dari `APP_URL`; sketch hanya menerima URL OTA yang diawali `SERVER_URL + "/api/firmware-download.php?id="`. Bila `.env` masih memakai `localhost` atau alamat berbeda, telemetry bisa berhasil tetapi OTA dilewati. Jangan menyalin kredensial Admin ke firmware.
+JSON dapat menuliskan angka bulat tanpa `.0`; nilainya tetap numerik cm. Jarak sensor dan `measurement_type` tidak dikirim oleh sketch terbaru. Web menerima penanda tipe yang tidak disertakan sebagai kontrak tinggi air. `POST /api/telemetry.php` memakai Content-Type application/json. Web mencatat tinggi dan Siaga secara transaksional di devices/sensor_logs. Kolom sensor_distance yang pernah dimigrasikan dipertahankan sebagai kolom tidak terpakai; pembacaan baru dan UI hanya memakai tinggi air. Data historis tidak dikonversi.
 
-Contoh menggunakan buzzer aktif pada GPIO 25. Sesuaikan pin/rangkaian dengan board dan gunakan driver yang sesuai kebutuhan arus buzzer.
+## Buzzer, konfigurasi lokal dan web
 
-## Sensor ultrasonik A01ANYUB V2 (UART)
+Kondisi aktif pada `evaluateBuzzer()` adalah Wi-Fi berstatus WL_CONNECTED, hasConfig, sensorValid, buzzerEnabled, dan tinggi air lebih besar dari alarmThreshold. Dengan ambang 500 cm: 499,9 dan 500 mati; 500,1 aktif. Karena aktif LOW, aktif menghasilkan GPIO 32 LOW; mati menghasilkan HIGH. Polaritas harus cocok dengan perangkat fisik.
 
-Sensor pengguna: **A01ANYUB V2**, SKU penjual **KB5005**, output **UART**, supply **3,3–5 V**, blind zone **28 cm**, rentang objek datar **28–750 cm**, dan IP67 berdasarkan foto spesifikasi. Model DYP-A01ANYUB-V2.0 menggunakan UART otomatis. Sketch memakai HardwareSerial UART2 pada **ESP32 DevKit berbasis WROOM-32**; model board pengguna belum dikonfirmasi dan pin/UART perlu disesuaikan untuk C3/S3. Tidak perlu library sensor tambahan.
+Default bila kunci Preferences belum tersedia: ambang 500 cm, buzzer aktif, interval kirim 60 detik. Saat boot, `loadConfig()` membaca namespace NVS `water`, kunci `thr`, `buz` dan `int`, lalu menetapkan hasConfig=true. Nilai yang pernah disimpan lebih diutamakan daripada default; mengubah DEFAULT_ALARM_THRESHOLD tidak menimpa NVS lama.
 
-| Pin A01ANYUB V2 | Sambungan awal (supply sensor 3,3 V)                |
-| --------------- | --------------------------------------------------- |
-| VCC             | 3V3 dengan suplai arus yang memadai                 |
-| GND             | GND bersama dengan ESP32                            |
-| TX              | GPIO 26, yaitu RX UART2 ESP32                       |
-| RX              | Biarkan tidak tersambung untuk mode nilai terproses |
+Respons GET `/api/device-config.php?device_id=ESP-001` dan POST telemetry diterapkan oleh `applyConfig()`: status success, alarm_threshold numerik finite, buzzer_status integer 0/1, update_interval integer 1–86399 detik. Nilai valid menggantikan konfigurasi, disimpan ke Preferences bila berubah, dan buzzer dievaluasi kembali. Versi/URL/checksum OTA tidak disimpan ke Preferences.
 
-GPIO 27 dikonfigurasi sebagai TX UART2 ESP32 tetapi tidak disambungkan ke sensor. Pin RX sensor adalah pemilih mode pada varian UART auto: floating/high menghasilkan nilai terproses yang lebih stabil, low menghasilkan nilai real-time. Tidak ada trigger Trig/Echo atau perintah polling UART. Ikuti label pin/datasheet unit, jangan menebak fungsi berdasarkan warna kabel.
+Sensor valid: konfigurasi diterima melalui respons telemetry sesuai interval yang aktif. Sensor invalid: GET konfigurasi dicoba setiap 10 detik ketika Wi-Fi terhubung. Tidak ada GET wajib terpisah saat boot jika sensor sudah valid. Perubahan interval di web menunggu request berikutnya; interval kirim tidak mengubah interval penghitungan sensor 5 detik. Interval kirim lebih singkat dapat mengirim tinggi yang sama berulang kali.
 
-Jika sensor diberi 5 V, pastikan level TX aman untuk GPIO 3,3 V. Gunakan level shifter bila TX berlevel 5 V; jangan menghubungkan sinyal 5 V langsung ke ESP32. Buzzer aktif tetap GPIO 25 melalui driver/transistor sesuai arus beban dan `BUZZER_ACTIVE_HIGH`.
+Wi-Fi putus: loop mematikan buzzer dan mencoba reconnect setiap 10 detik; sensor tetap dipoll. WL_CONNECTED hanya menandakan sambungan Wi-Fi, bukan koneksi internet atau API sehat. Jika Wi-Fi masih tersambung tetapi API gagal, konfigurasi tersimpan tetap dipakai dan buzzer masih dapat aktif. Sampel offline tidak diantrekan.
 
-Pasang muka sensor menghadap tegak lurus permukaan. Ukur jarak dari **muka sensor ke titik acuan tinggi air nol**, kemudian masukkan ke `SENSOR_MOUNT_HEIGHT_CM` (contoh awal 200 cm, wajib sesuaikan pemasangan). Rumus: `water_level = SENSOR_MOUNT_HEIGHT_CM - jarak_permukaan`. Contoh pemasangan 200 cm dengan jarak terukur 75 cm menghasilkan tinggi air 125 cm. Nilai yang dikirim adalah tinggi air, bukan jarak sensor.
+Request GET/POST sinkron, timeout 10 detik, sehingga pembacaan/evaluasi dapat tertunda saat menunggu. Setelah gagal, request berikutnya mengikuti interval; tidak ada pengiriman ulang langsung atau jaminan waktu real-time.
 
-Titik acuan nol dapat berupa dasar bak atau patokan elevasi yang ditetapkan untuk sungai, bukan permukaan air saat pemasangan. Jika jarak muka sensor ke acuan nol adalah 500 cm, isi `500.0f`. Nilai ini merupakan kalibrasi dalam sketch; mengubah nama pos, koordinat, atau batas Siaga di web tidak mengubahnya. Kode menerima tinggi pemasangan lebih dari 28 cm sampai 750 cm.
+## OTA
 
-UART diatur **9600 baud, 8N1**, frame empat byte `[0xFF, DATA_H, DATA_L, SUM]`. Checksum adalah `(0xFF + DATA_H + DATA_L) & 0xFF`. Jarak dalam mm adalah `(DATA_H << 8) | DATA_L`, kemudian dibagi 10 menjadi cm. Contoh frame `FF 07 A1 A7` berarti 1953 mm = 195,3 cm; dengan pemasangan 200 cm, tinggi air 4,7 cm.
+Respons server memuat latest_firmware, ota_url dan firmware_sha256. `tryOta()` berjalan saat Wi-Fi tersambung dan hanya mencoba versi numerik lebih tinggi, checksum string 64 karakter, serta URL berawalan SERVER_URL + `/api/firmware-download.php?id=`. Nilai null/kosong berarti tidak ada target yang dapat dipasang.
 
-Setiap pembacaan membuang buffer lama, menunggu maksimal 1,8 detik untuk lima frame baru, dan memerlukan minimal tiga frame valid. Median digunakan untuk meredam lonjakan; untuk jumlah genap, dua nilai tengah dirata-ratakan. Header sampah/checksum salah diabaikan dengan sinkronisasi ulang; paket terpotong direset setelah jeda byte lebih dari 50 ms. Tidak ada perhitungan durasi Echo atau kecepatan suara pada ESP32 karena sensor sudah mengirim jarak.
+Upload `.bin` aplikasi melalui halaman Firmware OTA dengan versi sama seperti FIRMWARE_VERSION di binary; naikkan dari v1.0.0 untuk rilis berikutnya. Semua perangkat menerima target global dan memerlukan board/partisi kompatibel. Download membutuhkan status 200, Content-Length positif dan slot cukup. Update.h menulis image sambil menghitung SHA-256, memverifikasi checksum dan menyelesaikan image sebelum reboot. Kegagalan membatalkan update; percobaan berikutnya minimal 5 menit sejak percobaan sebelumnya. Sensor/buzzer tetap diperiksa pada loop download; timeout HTTP/download dapat menunda evaluasi.
 
-Frame dengan jarak **≤28 cm** atau **>750 cm** membatalkan pembacaan saat itu, meskipun ada sampel valid sebelumnya. Pabrikan menyatakan objek di dalam blind zone dapat dilaporkan sebagai 28 cm, sehingga kode menolak tepat 28 cm juga. Tinggi air negatif akibat acuan pemasangan ditolak. Pemasangan 200 cm hanya mengukur tinggi air kurang dari 172 cm secara andal dalam batas ini; letakkan sensor lebih dari 28 cm di atas permukaan air maksimum, dengan margin. Pembacaan invalid mematikan buzzer dan melewati telemetry sesuai perilaku firmware sebelumnya; ini bukan indikasi kondisi air aman.
+Sesudah reboot, konfirmasi reported_firmware melalui telemetry yang berhasil, bukan hanya current_firmware di web. Kompilasi dan pengujian OTA fisik belum dilakukan di lingkungan ini.
 
-Foto mencantumkan waktu respons 100 ms. Pada UART auto, mode nilai terproses dapat lebih lambat (beberapa ratus ms); timeout pengumpulan 1,8 detik memberi ruang untuk minimal tiga frame. Riak, busa, posisi sensor, dan pantulan dinding tetap memengaruhi pengukuran. Mode komunikasi ini khusus A01ANYUB UART auto, bukan varian UART controlled/PWM/RS485.
+## Sleep dan kontrol daya opsional
 
-Rujukan: [model dan blind zone DYP A01](https://www.dypcn.com/new-arrival-china-dyp-a01-well-water-level-measurement-waterproof-ultrasonic-sensor-product/), [protokol UART DYP A01](https://www.dypcn.com/uploads/A01-Output-Interfaces.pdf), [batas listrik ESP32-WROOM-32](https://documentation.espressif.com/esp32-wroom-32_datasheet_en.html).
+Saat ini SLEEP_ENABLED=false dan SENSOR_POWER_CONTROL=false: deep sleep dan pensaklaran daya sensor tidak aktif. WiFi.setSleep(true) tetap dipanggil untuk modem sleep; ini berbeda dari deep sleep seluruh ESP32.
 
-Sketch tidak mengirim data dummy. Sebelum pembacaan valid tersedia, Serial Monitor menampilkan penjelasan, buzzer tetap mati, dan telemetry dilewati. Pengambilan konfigurasi dan pengecekan OTA tetap berjalan; GET tidak menandai perangkat Online.
+Jika diaktifkan, sleep memakai interval kirim sebagai durasi timer. Tidak tidur saat kondisi alarm aktif. Ketika kondisi selesai terpenuhi, buzzer dimatikan, pin ditahan dengan GPIO hold, sensor dimatikan jika kontrol daya diaktifkan, lalu deep sleep. Kontrol sensor menggunakan GPIO 33 dan polaritas aktif HIGH. Batas Wi-Fi offline adalah 15 detik dan MAX_AWAKE_MS 30 detik; batas tersebut dievaluasi oleh loop dan dapat terlampaui akibat request sinkron. Alarm aktif juga menghalangi sleep meskipun batas menyala terlampaui.
 
-Login Admin hanya untuk browser. Jangan menaruh `ADMIN_EMAIL` atau `ADMIN_PASSWORD` dalam sketch; endpoint ESP32 tetap memakai kontrak API perangkat yang ada. Siaga 1/2/3 ditentukan server dari tinggi yang dikirim. Buzzer mengikuti `alarm_threshold` dan `buzzer_status` dari dashboard.
+Keterbatasan implementasi: telemetryDone diatur true setelah sendTelemetry() dipanggil, tanpa memeriksa apakah HTTP/konfigurasi berhasil. Jadi mode sleep dapat tidur setelah percobaan kirim gagal; ini bukan bukti data sudah tersimpan. Setelah bangun, konfigurasi lokal dipakai sampai respons web berikutnya diterima. Fitur sleep/daya belum diuji pada rangkaian fisik.
 
-## Perilaku saat berjalan
+## Verifikasi operasional
 
-- Boot: matikan buzzer, sambungkan Wi-Fi, dan ambil konfigurasi.
-- Ambil kumpulan frame sensor setiap 5 detik (menunggu hingga 1,8 detik), lalu evaluasi buzzer memakai pembacaan/konfigurasi terbaru.
-- Kirim telemetry sesuai interval. Interval kurang dari 5 detik dapat mengirim sampel yang sama beberapa kali.
-- `buzzer_status: 0` mematikan buzzer segera setelah respons diterapkan.
-- Pertahankan konfigurasi terakhir saat jaringan gagal dan coba sambungkan Wi-Fi kembali. Pembacaan offline tidak diantrekan.
-- Request konfigurasi/telemetry berjalan sinkron dengan timeout 10 detik. Pembacaan sensor dapat tertunda saat request menunggu respons. Loop download OTA tetap memeriksa sensor/buzzer.
-- Contoh menggunakan HTTP melalui LAN. HTTPS memerlukan `WiFiClientSecure` dan CA yang benar; mengganti URL saja belum menyiapkan TLS.
+1. Ukur pemasangan dan bandingkan Serial Monitor dengan tinggi manual, termasuk jarak di luar rentang serta frame checksum salah.
+2. Dengan ambang 500, uji tinggi di bawah/tepat/di atas batas; periksa LOW/HIGH GPIO dan kondisi buzzer/relay sebenarnya. Uji sakelar buzzer mati.
+3. Ubah interval lewat Perangkat, tunggu request berikutnya, lalu periksa interval telemetry. Reboot dan konfirmasi konfigurasi tersimpan.
+4. Lepas TX sensor dan tunggu siklus evaluasi; telemetry invalid harus dilewati. Pulihkan kabel dan pastikan pengiriman pulih.
+5. Bedakan Wi-Fi terputus dengan server/API tidak tersedia saat Wi-Fi masih tersambung; hasil buzzer berbeda sesuai kondisi di atas.
+6. Uji OTA dengan versi lebih tinggi, unduhan terputus dan image tidak cocok. Konfirmasi versi setelah reboot.
 
-## Alur OTA
-
-1. Naikkan `FIRMWARE_VERSION`, misalnya `v1.0.0` menjadi `v1.1.0`.
-2. Ekspor **`.bin` aplikasi**, bukan bootloader, tabel partisi, atau merged flash image.
-3. Upload melalui dashboard dengan versi yang sama persis dan catatan pembaruan.
-4. ESP32 menerima versi/URL pada request berikutnya, membandingkan versi numerik, dan mengunduh hanya dari server yang dikonfigurasi.
-5. `Update.h` menulis ke slot OTA sambil menghitung SHA-256. Hasilnya harus cocok sebelum `Update.end()` menyelesaikan image.
-6. Jika berhasil, reboot dan laporkan versi baru. Jika gagal, batalkan dan coba kembali setelah minimal 5 menit; firmware yang sedang berjalan tetap aktif.
-
-Flash firmware awal melalui USB. Semua perangkat harus menggunakan board dan susunan partisi kompatibel karena publikasi firmware bersifat global.
-
-## Pengujian perangkat keras
-
-- Kalibrasi dalam cm; pastikan pembacaan invalid menghasilkan `NAN`.
-- Buka Serial Monitor 115200 baud: bandingkan `Distance` dan `Water level` dengan pengukuran manual pada beberapa posisi.
-- Lepas kabel TX sensor: setelah siklus baca berikutnya telemetry harus berhenti, bukan mengirim tinggi palsu. Sambungkan kembali dan pastikan pengiriman pulih.
-- Uji frame checksum salah, header sampah, frame terpotong, jarak 280/281/7500/7501 mm. Hanya frame lengkap dengan checksum benar dan jarak >280 sampai 7500 mm yang dapat dipakai.
-- Untuk pemasangan 200 cm: jarak 75 cm menghasilkan sekitar 125 cm; jarak 150 cm menghasilkan sekitar 50 cm. Uji juga pantulan menyimpang dan jarak di luar rentang.
-- Uji di bawah, tepat pada, dan di atas threshold; matikan sakelar buzzer saat air tinggi.
-- Ubah interval dan amati waktu request.
-- Putuskan Wi-Fi, periksa Offline, sambungkan kembali, dan periksa Online.
-- Publikasikan versi lebih tinggi dan verifikasi `reported_firmware` setelah reboot.
-- Uji file rusak, unduhan terputus, dan binary terlalu besar; image gagal tidak boleh menjadi target boot.
-
-Sketch belum dikompilasi dengan toolchain ESP32 atau diuji pada perangkat fisik dalam lingkungan ini.
-
-Terakhir diperbarui: 9 November 2026. Pengguna: operator perangkat. Owner/PIC dan maintainer: Not confirmed. Pembaruan dokumentasi ini tidak mengubah firmware, skema database, atau endpoint server.
+Dokumentasi ini diperiksa terhadap sumber sketch dan kontrak API lokal. Belum ada hasil kompilasi toolchain ESP32 atau pengujian perangkat fisik. Tidak ada perubahan firmware, kredensial, endpoint, maupun database dalam pembaruan dokumentasi ini.

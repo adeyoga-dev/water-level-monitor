@@ -32,17 +32,15 @@ const String FIRMWARE_VERSION = "v1.0.0";
 
 // ===== Buzzer =====
 const int BUZZER_PIN = 32; // Buzzer aktif di GPIO 32
-const bool BUZZER_ACTIVE_HIGH = true;
+const bool BUZZER_ACTIVE_HIGH = false;
 
 // ===== Sensor A01ANYUB V2 (UART) =====
-// Sama dengan wiring yang sudah terbukti jalan:
 // Putih (TX sensor) -> GPIO 16, Kuning (RX sensor) -> GPIO 17
 HardwareSerial sensorSerial(2);
 const int SENSOR_RX_PIN = 16;
 const int SENSOR_TX_PIN = 17;
 const uint32_t SENSOR_BAUD = 9600;
 const float SENSOR_MOUNT_HEIGHT_CM = 700.0f; // Sensor dipasang 7 m dari dasar, menghadap ke bawah
-// water_level selalu TINGGI air; jarak hanya untuk perhitungan lokal.
 const float SENSOR_MIN_DISTANCE_CM = 28.0f;
 const float SENSOR_MAX_DISTANCE_CM = 750.0f;
 const uint32_t SENSOR_STALE_MS = 3000; // data dianggap basi setelah 3 detik
@@ -50,7 +48,7 @@ const uint32_t SENSOR_INTERVAL_MS = 5000;
 const uint32_t OTA_RETRY_MS = 300000;
 
 // ===== Setting manual (dipakai kalau belum pernah dapat config dari server) =====
-const float DEFAULT_ALARM_THRESHOLD = 150.0f; // cm tinggi air; diganti konfigurasi web saat diterima
+const float DEFAULT_ALARM_THRESHOLD = 500.0f; // cm (tinggi air), buzzer bunyi jika air di atas ini
 const bool DEFAULT_BUZZER_ENABLED = true;
 const uint32_t DEFAULT_INTERVAL_S = 60;
 
@@ -79,7 +77,7 @@ uint32_t lastConfigTry = 0, lastOtaTry = 0;
 bool otaAttempted = false;
 String latestFirmware, otaUrl, firmwareSha256;
 
-// ===== Pembacaan sensor (cara sederhana, sama seperti kode tes) =====
+// ===== Pembacaan sensor =====
 uint8_t buf[4];
 int lastJarakMm = -1;
 uint32_t lastJarakMs = 0;
@@ -118,7 +116,7 @@ void pollSensor()
   }
 }
 
-// Ubah jarak terakhir menjadi tinggi air (cm)
+// Hitung tinggi air dari dasar (cm)
 float readWaterLevelCm()
 {
   pollSensor();
@@ -132,7 +130,8 @@ float readWaterLevelCm()
   float tinggi = SENSOR_MOUNT_HEIGHT_CM - distance;
   if (tinggi < 0)
     tinggi = 0;
-  Serial.printf("Jarak: %.1f cm | Tinggi air: %.1f cm\n", distance, tinggi);
+
+  Serial.printf("Tinggi air: %.1f cm\n", tinggi);
   return tinggi;
 }
 
@@ -186,7 +185,7 @@ void loadConfig()
   buzzerEnabled = prefs.getBool("buz", DEFAULT_BUZZER_ENABLED);
   sendIntervalMs = prefs.getUInt("int", DEFAULT_INTERVAL_S) * 1000UL;
   prefs.end();
-  hasConfig = true; // pakai setting tersimpan / manual, jadi buzzer tetap jalan offline
+  hasConfig = true; // pakai setting tersimpan / manual
   Serial.printf("Config lokal: threshold %.1f cm, buzzer %s, interval %lu s\n",
                 alarmThreshold, buzzerEnabled ? "ON" : "OFF", (unsigned long)(sendIntervalMs / 1000));
 }
@@ -244,8 +243,7 @@ void sendTelemetry()
 
   JsonDocument doc;
   doc["device_id"] = DEVICE_ID;
-  doc["water_level"] = latestWaterLevel;
-  doc["measurement_type"] = "water_height";
+  doc["water_level"] = roundf(latestWaterLevel * 10.0f) / 10.0f; // tinggi air, 1 desimal
   doc["device_status"] = 1;
   doc["firmware_version"] = FIRMWARE_VERSION;
   String body;
@@ -378,7 +376,6 @@ void goToSleep()
     gpio_hold_en((gpio_num_t)SENSOR_POWER_PIN);
   }
   gpio_deep_sleep_hold_en();
-  // WiFi otomatis mati saat deep sleep, tidak perlu WiFi.mode(WIFI_OFF)
   esp_sleep_enable_timer_wakeup((uint64_t)sleepS * 1000000ULL);
   esp_deep_sleep_start();
 }
