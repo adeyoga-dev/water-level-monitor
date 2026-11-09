@@ -6,9 +6,9 @@
   const focusButtons = [...document.querySelectorAll("[data-map-device]")];
   if (typeof L === "undefined") {
     container.setAttribute("aria-busy", "false");
-    status.textContent = "Map unavailable";
+    status.textContent = "Peta tidak tersedia";
     error.textContent =
-      "The map library could not be loaded. Reload this page to try again. Device locations are still listed below.";
+      "Pustaka peta gagal dimuat. Muat ulang halaman untuk mencoba lagi. Lokasi perangkat tetap tercantum di bawah.";
     error.hidden = false;
     return;
   }
@@ -22,11 +22,13 @@
   ]);
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const map = L.map(container, {
+    zoomControl: false,
     scrollWheelZoom: true,
     zoomSnap: 0.25,
     minZoom: 2,
     maxZoom: 19,
   });
+  L.control.zoom({ zoomInTitle: "Perbesar peta", zoomOutTitle: "Perkecil peta" }).addTo(map);
   const markers = new Map();
   let overview = true;
   let tileErrors = 0;
@@ -45,18 +47,18 @@
   const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> kontributor',
   });
   tiles.on("loading", () => {
     clearTimeout(tileTimer);
     tileErrors = 0;
     container.setAttribute("aria-busy", "true");
-    status.textContent = "Loading map tiles…";
+    status.textContent = "Memuat gambar peta…";
     tileTimer = setTimeout(() => {
       container.setAttribute("aria-busy", "false");
-      status.textContent = "Map tiles are taking longer than expected";
+      status.textContent = "Gambar peta membutuhkan waktu lebih lama dari biasanya";
       error.textContent =
-        "Check your internet connection or reload this page. Device pins and the list remain available.";
+        "Periksa koneksi internet atau muat ulang halaman. Penanda dan daftar perangkat tetap tersedia.";
       error.hidden = false;
     }, 15000);
   });
@@ -67,12 +69,12 @@
     clearTimeout(tileTimer);
     container.setAttribute("aria-busy", "false");
     status.textContent = tileErrors
-      ? "Some map tiles could not be loaded"
-      : `${devices.length} device locations · Select a pin for details`;
+      ? "Sebagian gambar peta gagal dimuat"
+      : `${devices.length} lokasi perangkat · Pilih penanda untuk melihat informasi`;
     error.hidden = tileErrors === 0;
     if (tileErrors)
       error.textContent =
-        "Some background tiles are unavailable. Check your connection or reload this page. Device pins and the list remain available.";
+        "Sebagian gambar peta tidak tersedia. Periksa koneksi atau muat ulang halaman. Penanda dan daftar perangkat tetap tersedia.";
   });
   tiles.addTo(map);
   for (const device of devices) {
@@ -83,31 +85,31 @@
     title.textContent = device.device_id;
     const badge = document.createElement("span");
     badge.className = `badge badge-${device.online ? "success" : "secondary"}`;
-    badge.textContent = device.online ? "Online" : "Offline";
+    badge.textContent = device.online ? "Terhubung" : "Terputus";
     const reading = document.createElement("p");
     reading.className = "mb-2 mt-2";
     reading.textContent =
       device.level === null
-        ? "No readings yet"
+        ? "Belum ada pembacaan"
         : `${device.level.toFixed(1)} cm · ${device.alert}`;
     const location = document.createElement("p");
     location.className = "small text-muted mb-2";
     location.textContent = `${device.latitude}, ${device.longitude}`;
     const seen = document.createElement("p");
     seen.className = "small text-muted mb-2";
-    seen.textContent = `Last measurement: ${device.last_seen}`;
+    seen.textContent = `Pengukuran terakhir: ${device.last_seen}`;
     const edit = document.createElement("a");
     edit.className = "btn btn-outline-secondary";
     edit.href = `/device-edit.php?id=${encodeURIComponent(device.id)}`;
-    edit.textContent = "Edit location";
+    edit.textContent = "Ubah lokasi";
     const view = document.createElement("a");
     view.className = "btn btn-primary";
     view.href = container.dataset.viewer === "true" ? "/viewer.php" : "/";
-    view.textContent = "View";
+    view.textContent = "Lihat";
     const zoomOut = document.createElement("button");
     zoomOut.type = "button";
     zoomOut.className = "btn btn-primary";
-    zoomOut.textContent = "Zoom in";
+    zoomOut.textContent = "Perbesar";
     zoomOut.addEventListener("click", () => {
       map.closePopup();
       map.setView([device.latitude, device.longitude], map.getMaxZoom(), {
@@ -126,7 +128,7 @@
     if (container.dataset.viewer !== "true") popup.append(seen);
     popup.append(actions);
     const marker = L.marker([device.latitude, device.longitude], {
-      title: `${device.device_id} · ${device.online ? "Online" : "Offline"}`,
+      title: `${device.device_id} · ${device.online ? "Terhubung" : "Terputus"}`,
       alt: device.device_id,
       icon: L.divIcon({
         className: `flow-map-marker ${device.online ? "is-online" : "is-offline"}`,

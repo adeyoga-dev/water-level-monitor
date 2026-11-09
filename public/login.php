@@ -18,5 +18,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = $e->getMessage();
     }
 }
-$title = 'Sign in';
+$title = 'Masuk';
 require dirname(__DIR__) . '/app/auth-view.php';

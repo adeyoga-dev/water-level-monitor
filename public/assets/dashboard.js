@@ -5,7 +5,7 @@ async function refreshDashboard() {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   panels.setAttribute("aria-busy", "true");
-  status.textContent = "Updating device readings…";
+  status.textContent = "Memperbarui pembacaan perangkat…";
   try {
     const response = await fetch(
       panels.dataset.endpoint || "/api/dashboard.php",
@@ -16,10 +16,10 @@ async function refreshDashboard() {
     );
     if (response.status === 401 || response.status === 403) {
       dashboardAccessExpired = true;
-      status.textContent = "Access ended. Sign in again to continue.";
+      status.textContent = "Sesi berakhir. Masuk kembali untuk melanjutkan.";
       const link = document.createElement("a");
       link.href = "/login.php";
-      link.textContent = " Sign in";
+      link.textContent = " Masuk";
       status.append(link);
       return;
     }
@@ -31,9 +31,9 @@ async function refreshDashboard() {
     document.querySelector("#stat-online").textContent = data.online;
     document.querySelector("#stat-offline").textContent =
       data.total - data.online;
-    status.textContent = "Updated " + new Date().toLocaleTimeString("en-GB");
+    status.textContent = "Diperbarui " + new Date().toLocaleTimeString("id-ID");
   } catch (_) {
-    status.textContent = "Connection lost · retrying";
+    status.textContent = "Koneksi terputus · mencoba lagi";
   } finally {
     clearTimeout(timeout);
     panels.setAttribute("aria-busy", "false");

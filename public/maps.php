@@ -16,65 +16,64 @@ foreach ($devices as $device) {
         'longitude' => (float) $device['longitude'],
         'online' => $viewer || (bool) $device['device_status'],
         'level' => $device['water_level'] === null ? null : (float) $device['water_level'],
-        'alert' => $device['water_level'] === null ? 'No readings yet' : alertLabel($device['alert_status']),
-        'last_seen' => $device['last_seen_display'],
+        'alert' => $device['water_level'] === null ? 'Belum ada pembacaan' : uiText(alertLabel($device['alert_status'])),
+        'last_seen' => uiText($device['last_seen_display']),
     ];
 }
-pageStart('Maps', 'maps', $viewer);
-// pageTitle('DEVICE LOCATIONS', 'Water monitoring across Indonesia.', $viewer ? 'View current device locations and water levels.' : 'View current device locations. Set or replace coordinates in Devices; location history is not recorded.');
+pageStart('Peta', 'maps', $viewer);
+// pageTitle('LOKASI PERANGKAT', 'Water monitoring across Indonesia.', $viewer ? 'Lihat lokasi perangkat dan tinggi air saat ini.' : 'Lihat lokasi perangkat saat ini. Atur atau ganti koordinat di Perangkat; riwayat lokasi tidak dicatat.');
 ?>
 <section class="card mb-4" aria-labelledby="maps-title">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
         <div>
-            <h2 class="h5 mb-1" id="maps-title">Device locations</h2>
-            <span class="small text-muted"><?= count($mapDevices) ?> mapped · <?= count($devices) - count($mapDevices) ?> without coordinates</span>
+            <h2 class="h5 mb-1" id="maps-title">Lokasi perangkat</h2>
+            <span class="small text-muted"><?= count($mapDevices) ?> terpetakan · <?= count($devices) - count($mapDevices) ?> tanpa koordinat</span>
         </div>
         <div class="d-flex flex-wrap flow-map-actions">
-            <button class="btn btn-outline-secondary" id="map-indonesia" type="button" disabled>Zoom out</button>
-            <a class="btn btn-outline-secondary" href="<?= $viewer ? '/viewer-maps.php' : '/maps.php' ?>">Reload data</a>
+            <button class="btn btn-outline-secondary" id="map-indonesia" type="button" disabled>Perkecil</button>
+            <a class="btn btn-outline-secondary" href="<?= $viewer ? '/viewer-maps.php' : '/maps.php' ?>">Muat ulang data</a>
         </div>
     </div>
     <div class="card-body">
-        <p class="small text-muted" id="map-status" role="status" aria-live="polite">Loading map…</p>
+        <p class="small text-muted" id="map-status" role="status" aria-live="polite">Memuat peta…</p>
         <div class="alert alert-danger" id="map-error" role="alert" hidden></div>
-        <?php if (!$mapDevices): ?><p class="text-muted">No device locations yet.<?php if (!$viewer): ?> Add coordinates in <a href="/devices.php">Devices</a> to place your first pin.<?php endif ?></p><?php endif ?>
-        <div id="devices-map" data-viewer="<?= $viewer ? 'true' : 'false' ?>" class="flow-map" role="region" aria-label="Map of device locations" aria-busy="true"></div>
-        <p class="small text-muted mt-3 mb-0">Select a pin or a device below. Status is a snapshot from this page load; use Reload data for updates.</p>
+        <?php if (!$mapDevices): ?><p class="text-muted">Belum ada lokasi perangkat.<?php if (!$viewer): ?> Tambahkan koordinat di <a href="/devices.php">Perangkat</a> untuk menempatkan penanda pertama.<?php endif ?></p><?php endif ?>
+        <div id="devices-map" data-viewer="<?= $viewer ? 'true' : 'false' ?>" class="flow-map" role="region" aria-label="Peta lokasi perangkat" aria-busy="true"></div>
         <noscript>
-            <p class="text-muted">Enable JavaScript to view the interactive map. Device locations remain available in the table below.</p>
+            <p class="text-muted">Aktifkan JavaScript untuk melihat peta interaktif. Lokasi perangkat tetap tersedia pada tabel di bawah.</p>
         </noscript>
     </div>
 </section>
 <section class="card" aria-labelledby="map-device-list-title">
     <div class="card-header">
-        <h2 class="h5 mb-0" id="map-device-list-title">Devices</h2>
+        <h2 class="h5 mb-0" id="map-device-list-title">Perangkat</h2>
     </div>
-    <div class="table-responsive" tabindex="0" role="region" aria-label="Device locations list">
+    <div class="table-responsive" tabindex="0" role="region" aria-label="Daftar lokasi perangkat">
         <table class="table table-hover mb-0">
             <thead>
                 <tr>
-                    <th scope="col">Device</th>
+                    <th scope="col">Perangkat</th>
                     <th scope="col">Status</th>
-                    <th scope="col">Coordinates</th>
-                    <th scope="col">Actions</th>
+                    <th scope="col">Koordinat</th>
+                    <th scope="col">Tindakan</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($devices as $device): ?>
                     <tr>
                         <td><strong><?= h($device['device_id']) ?></strong></td>
-                        <td><span class="badge badge-<?= ($viewer || $device['device_status']) ? 'success' : 'secondary' ?>"><?= ($viewer || $device['device_status']) ? 'Online' : 'Offline' ?></span></td>
-                        <td class="text-nowrap"><?php if (($device['latitude'] ?? null) !== null && ($device['longitude'] ?? null) !== null): ?><?= h($device['latitude']) ?>, <?= h($device['longitude']) ?><?php else: ?><span class="text-muted">Not set</span><?php endif ?></td>
+                        <td><span class="badge badge-<?= ($viewer || $device['device_status']) ? 'success' : 'secondary' ?>"><?= ($viewer || $device['device_status']) ? 'Terhubung' : 'Terputus' ?></span></td>
+                        <td class="text-nowrap"><?php if (($device['latitude'] ?? null) !== null && ($device['longitude'] ?? null) !== null): ?><?= h($device['latitude']) ?>, <?= h($device['longitude']) ?><?php else: ?><span class="text-muted">Belum diatur</span><?php endif ?></td>
                         <td>
                             <div class="d-flex flex-wrap flow-map-actions">
-                                <?php if (($device['latitude'] ?? null) !== null && ($device['longitude'] ?? null) !== null): ?><button class="btn btn-outline-secondary" type="button" data-map-device="<?= (int) $device['id'] ?>" disabled>Show on map<span class="sr-only"> <?= h($device['device_id']) ?></span></button><?php endif ?>
-                                <?php if (!$viewer): ?><a class="btn btn-outline-secondary" href="/device-edit.php?id=<?= (int) $device['id'] ?>">Edit location<span class="sr-only"> <?= h($device['device_id']) ?></span></a><?php endif ?>
+                                <?php if (($device['latitude'] ?? null) !== null && ($device['longitude'] ?? null) !== null): ?><button class="btn btn-outline-secondary" type="button" data-map-device="<?= (int) $device['id'] ?>" disabled>Tampilkan di peta<span class="sr-only"> <?= h($device['device_id']) ?></span></button><?php endif ?>
+                                <?php if (!$viewer): ?><a class="btn btn-outline-secondary" href="/device-edit.php?id=<?= (int) $device['id'] ?>">Ubah lokasi<span class="sr-only"> <?= h($device['device_id']) ?></span></a><?php endif ?>
                             </div>
                         </td>
                     </tr>
                 <?php endforeach ?>
                 <?php if (!$devices): ?><tr>
-                        <td colspan="4" class="text-center text-muted py-5">No devices yet.<?php if (!$viewer): ?> <a href="/device-edit.php">Add a device</a> to get started.<?php endif ?></td>
+                        <td colspan="4" class="text-center text-muted py-5">Belum ada perangkat.<?php if (!$viewer): ?> <a href="/device-edit.php">Add a device</a> untuk memulai.<?php endif ?></td>
                     </tr><?php endif ?>
             </tbody>
         </table>

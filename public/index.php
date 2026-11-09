@@ -5,8 +5,8 @@ require dirname(__DIR__) . '/app/layout.php';
 $viewer = defined('FLOW_VIEWER') && FLOW_VIEWER;
 $devices = deviceList(!$viewer);
 $online = $viewer ? count($devices) : count(array_filter($devices, fn($d) => (int)$d['device_status'] === 1));
-pageStart('Dashboard', 'dashboard', $viewer);
-// pageTitle('OVERVIEW', 'Monitor water. Stay informed.', 'Device status and water levels, all in one place.');
+pageStart('Dasbor', 'dashboard', $viewer);
+// pageTitle('RINGKASAN', 'Pantau air. Tetap waspada.', 'Status perangkat dan tinggi air dalam satu tampilan.');
 ?>
 <div class="flow-stats row mx-n2 mb-2">
     <div class="col-md-6 col-lg-4 px-2 mb-3">
@@ -19,7 +19,7 @@ pageStart('Dashboard', 'dashboard', $viewer);
                     </svg>
                 </span>
                 <div>
-                    <h2 class="h6 font-weight-normal text-muted mb-1">Total devices</h2>
+                    <h2 class="h6 font-weight-normal text-muted mb-1">Total perangkat</h2>
                     <strong class="h4 d-block mb-0" id="stat-total"><?= count($devices) ?></strong>
                 </div>
             </div>
@@ -34,7 +34,7 @@ pageStart('Dashboard', 'dashboard', $viewer);
                     </svg>
                 </span>
                 <div>
-                    <h2 class="h6 font-weight-normal text-muted mb-1">Online</h2>
+                    <h2 class="h6 font-weight-normal text-muted mb-1">Terhubung</h2>
                     <strong class="h4 d-block text-success mb-0" id="stat-online"><?= $online ?></strong>
                 </div>
             </div>
@@ -50,14 +50,14 @@ pageStart('Dashboard', 'dashboard', $viewer);
                     </svg>
                 </span>
                 <div>
-                    <h2 class="h6 font-weight-normal text-muted mb-1">Offline</h2>
+                    <h2 class="h6 font-weight-normal text-muted mb-1">Terputus</h2>
                     <strong class="h4 d-block text-danger mb-0" id="stat-offline"><?= count($devices) - $online ?></strong>
                 </div>
             </div>
         </article>
     </div>
 </div>
-<!-- <p class="small text-muted" id="refresh-status" role="status" aria-live="polite">Refreshes every 5 seconds</p> -->
+<!-- <p class="small text-muted" id="refresh-status" role="status" aria-live="polite">Diperbarui setiap 5 detik</p> -->
 <div class="row" id="water-level-panels" data-endpoint="<?= $viewer ? '/api/viewer-dashboard.php' : '/api/dashboard.php' ?>" aria-busy="false"><?php waterLevelPanels($devices, false, $viewer) ?></div>
 <script src="/assets/dashboard.js" defer></script>
 <?php pageEnd(); ?>

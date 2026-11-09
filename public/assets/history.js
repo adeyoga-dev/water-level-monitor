@@ -26,13 +26,13 @@
     .getPropertyValue("--accent-blue-deep")
     .trim();
   const labels = {
-    minute: "Per minute",
-    hour: "Hourly",
-    day: "Daily",
-    month: "Monthly",
-    year: "Yearly",
+    minute: "Per menit",
+    hour: "Per jam",
+    day: "Harian",
+    month: "Bulanan",
+    year: "Tahunan",
   };
-  const fullDate = new Intl.DateTimeFormat("en-GB", {
+  const fullDate = new Intl.DateTimeFormat("id-ID", {
     timeZone: initial.timezone,
     year: "numeric",
     month: "short",
@@ -68,7 +68,7 @@
     reset.disabled = busy;
     content.setAttribute("aria-busy", String(busy));
     filterState.textContent = dirty()
-      ? "Unapplied filters. Auto refresh paused; apply filters to update the chart."
+      ? "Filter belum diterapkan. Pembaruan otomatis dijeda; terapkan filter untuk memperbarui grafik."
       : "";
   }
 
@@ -102,11 +102,11 @@
                   ? { day: "2-digit", month: "short" }
                   : {}),
               };
-    const tickFormat = new Intl.DateTimeFormat("en-GB", {
+    const tickFormat = new Intl.DateTimeFormat("id-ID", {
       timeZone: data.timezone,
       ...tickOptions,
     });
-    const tooltipFormat = new Intl.DateTimeFormat("en-GB", {
+    const tooltipFormat = new Intl.DateTimeFormat("id-ID", {
       timeZone: data.timezone,
       ...tickOptions,
       ...(unit === "day" ? { year: "numeric" } : {}),
@@ -131,7 +131,7 @@
     const datasets = grouped
       ? [
           {
-            label: "Average (cm)",
+            label: "Rata-rata (cm)",
             borderColor: primary,
             backgroundColor: primary,
             data: points,
@@ -144,7 +144,7 @@
             data: points.map((point) => ({ ...point, y: point.min })),
           },
           {
-            label: "Maximum (cm)",
+            label: "Maksimum (cm)",
             borderColor: colors[2],
             backgroundColor: colors[2],
             borderDash: [4, 3],
@@ -154,7 +154,7 @@
       : [
           {
             ...base,
-            label: "Water level (cm)",
+            label: "Tinggi air (cm)",
             data: points,
             borderColor: primary,
             backgroundColor: primary,
@@ -182,7 +182,7 @@
             max: data.period?.to ?? last + padding,
             title: {
               display: true,
-              text: `${labels[unit] ?? "Time"} · ${data.timezone}`,
+              text: `${labels[unit] ?? "Waktu"} · ${data.timezone}`,
             },
             afterBuildTicks: (scale) => {
               // Label actual calendar buckets rather than arbitrary millisecond intervals.
@@ -200,7 +200,7 @@
           },
           y: {
             beginAtZero: true,
-            title: { display: true, text: "Water level (cm)" },
+            title: { display: true, text: "Tinggi air (cm)" },
           },
         },
         plugins: {
@@ -218,10 +218,10 @@
               label: (item) =>
                 grouped
                   ? `${item.dataset.label}: ${item.parsed.y.toFixed(2)}`
-                  : `${item.parsed.y.toFixed(2)} cm · ${item.raw.alarm_status === null ? "Unclassified" : `Siaga ${item.raw.alarm_status + 1}`}`,
+                  : `${item.parsed.y.toFixed(2)} cm · ${item.raw.alarm_status === null ? "Tidak terklasifikasi" : `Siaga ${item.raw.alarm_status + 1}`}`,
               footer: (items) =>
                 grouped
-                  ? `${items[0].raw.count} readings in this interval`
+                  ? `${items[0].raw.count} pembacaan pada interval ini`
                   : "",
             },
           },
@@ -244,17 +244,17 @@
       const max = Math.max(
         ...populated.map((point) => (grouped ? point.max : point.y)),
       );
-      summary.textContent = `${data.reading_count} readings · ${grouped ? `${populated.length} ${unit} intervals with data · ` : ""}Min ${min.toFixed(2)} cm · Max ${max.toFixed(2)} cm`;
+      summary.textContent = `${data.reading_count} pembacaan · ${grouped ? `${populated.length} interval ${labels[unit] ?? unit} berisi data · ` : ""}Minimum ${min.toFixed(2)} cm · Maksimum ${max.toFixed(2)} cm`;
     } else {
       if (chart) {
         chart.data.datasets = [];
         chart.update("none");
       }
-      summary.textContent = "No historical measurements in this date range.";
+      summary.textContent = "Tidak ada riwayat pengukuran pada rentang tanggal ini.";
     }
     note.textContent = grouped
-      ? `${data.filters.from} to ${data.filters.to} (inclusive) · ${labels[unit]} averages with minimum and maximum. Empty intervals are gaps. Times use ${data.timezone}. Refreshes every 5 seconds.`
-      : `Latest ${data.limit} readings. Times use ${data.timezone}. Refreshes every 5 seconds.`;
+      ? `${data.filters.from} sampai ${data.filters.to} (termasuk kedua tanggal) · Rata-rata ${labels[unit]} beserta minimum dan maksimum. Interval kosong ditampilkan sebagai celah. Waktu menggunakan ${data.timezone}. Diperbarui setiap 5 detik.`
+      : `${data.limit} pembacaan terbaru. Waktu menggunakan ${data.timezone}. Diperbarui setiap 5 detik.`;
     if (typeof data.html === "string")
       document.querySelector("#history-device").innerHTML = data.html;
   }
@@ -267,10 +267,10 @@
     controller = requestController;
     busy = true;
     controls();
-    status.textContent = "Loading selected water level history…";
+    status.textContent = "Memuat riwayat tinggi air yang dipilih…";
     error.hidden = true;
     const timeout = setTimeout(() => requestController.abort(), 15000);
-    let failureMessage = "Unable to load history. Try again.";
+    let failureMessage = "Riwayat gagal dimuat. Silakan coba lagi.";
     try {
       const response = await fetch(
         `/api/device-history.php?${new URLSearchParams({ device_id: deviceId, ...filters })}`,
@@ -284,18 +284,24 @@
       if (response.status === 401 || response.status === 403) {
         stopped = true;
         error.textContent =
-          "Access ended. Sign in again to continue. Your current filters are retained.";
+          "Sesi berakhir. Masuk kembali untuk melanjutkan. Filter saat ini tetap disimpan.";
         const link = document.createElement("a");
         link.href = "/login.php";
-        link.textContent = " Sign in";
+        link.textContent = " Masuk";
         error.append(link);
         error.hidden = false;
-        status.textContent = "Access ended";
+        status.textContent = "Sesi berakhir";
         return;
       }
       if (!response.ok || data.status !== "success") {
         if (response.status === 422 && typeof data.message === "string")
-          failureMessage = data.message;
+          failureMessage = data.message
+            .replace("Provide valid From and To dates in YYYY-MM-DD format.", "Isi tanggal awal dan akhir yang valid dalam format YYYY-MM-DD.")
+            .replace("From date must be on or before To date.", "Tanggal awal tidak boleh melewati tanggal akhir.")
+            .replace("Choose Auto, Minute, Hour, Day, Month, or Year grouping.", "Pilih pengelompokan otomatis, menit, jam, hari, bulan, atau tahun.")
+            .replace("Minute grouping requires a single date. Set From date and To date to the same date.", "Pengelompokan per menit memerlukan satu tanggal. Samakan tanggal awal dan tanggal akhir.")
+            .replace("This grouping would create more than ", "Pengelompokan ini menghasilkan lebih dari ")
+            .replace(" points. Shorten the date range or choose a larger grouping.", " titik. Perpendek rentang tanggal atau pilih kelompok yang lebih besar.");
         throw new Error("History unavailable");
       }
       render(data);
@@ -304,12 +310,12 @@
       for (const [name, value] of Object.entries(appliedFilters))
         url.searchParams.set(name, value);
       window.history.replaceState(null, "", url);
-      status.textContent = "Updated " + new Date().toLocaleTimeString("en-GB");
+      status.textContent = "Diperbarui " + new Date().toLocaleTimeString("id-ID");
     } catch (_) {
       if (!stopped && requestRevision === revision) {
-        error.textContent = `${failureMessage} The last loaded chart is retained.`;
+        error.textContent = `${failureMessage} Grafik terakhir tetap ditampilkan.`;
         error.hidden = false;
-        status.textContent = "History update failed";
+        status.textContent = "Pembaruan riwayat gagal";
       }
     } finally {
       clearTimeout(timeout);
@@ -329,8 +335,8 @@
     form.elements.to.setCustomValidity("");
     error.hidden = true;
     status.textContent = dirty()
-      ? "Showing the last applied date range"
-      : "Refreshes every 5 seconds";
+      ? "Menampilkan rentang tanggal terakhir yang diterapkan"
+      : "Diperbarui setiap 5 detik";
     controls();
     schedule();
   }
@@ -341,10 +347,10 @@
   });
   if (typeof Chart === "undefined") {
     error.textContent =
-      "The chart could not be loaded. Reload this page to try again.";
+      "Grafik gagal dimuat. Muat ulang halaman untuk mencoba lagi.";
     error.hidden = false;
-    status.textContent = "Chart unavailable";
-    refresh.textContent = "Reload page";
+    status.textContent = "Grafik tidak tersedia";
+    refresh.textContent = "Muat ulang halaman";
     apply.disabled = reset.disabled = true;
     content.setAttribute("aria-busy", "false");
     return;
@@ -356,14 +362,14 @@
     if (busy) return;
     const filters = readFilters();
     form.elements.to.setCustomValidity(
-      filters.from > filters.to ? "To date must be on or after From date." : "",
+      filters.from > filters.to ? "Tanggal akhir tidak boleh sebelum tanggal awal." : "",
     );
     if (!form.reportValidity()) return;
     if (filters.group_by === "minute" && filters.from !== filters.to) {
       error.textContent =
-        "Minute grouping requires a single date. Set From date and To date to the same date.";
+        "Pengelompokan per menit memerlukan satu tanggal. Samakan tanggal awal dan tanggal akhir.";
       error.hidden = false;
-      status.textContent = "Invalid date filters";
+      status.textContent = "Filter tanggal tidak valid";
       error.focus();
       return;
     }
@@ -372,7 +378,7 @@
   reset.addEventListener("click", () => {
     if (
       busy ||
-      (dirty() && !window.confirm("Discard unapplied filters and show today?"))
+      (dirty() && !window.confirm("Buang filter yang belum diterapkan dan tampilkan hari ini?"))
     )
       return;
     form.elements.from.value = form.elements.to.value = form.dataset.today;
@@ -414,7 +420,7 @@
     .trim();
   render(initial);
   controls();
-  status.textContent = "Refreshes every 5 seconds";
+  status.textContent = "Diperbarui setiap 5 detik";
   schedule();
   window.addEventListener("pagehide", () => {
     stopped = true;

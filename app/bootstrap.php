@@ -13,7 +13,7 @@ set_exception_handler(function (Throwable $e): void {
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['status' => 'error', 'message' => 'A server error occurred. Check the configuration and server logs.']);
     } else {
-        echo '<h1>The application could not process this request</h1><p>Check the MySQL connection, import schema.sql, and configure .env. Details are available in storage/logs/php.log.</p>';
+        echo '<h1>Aplikasi tidak dapat memproses permintaan ini</h1><p>Periksa koneksi MySQL, impor schema.sql, dan konfigurasi .env. Detail tersedia di storage/logs/php.log.</p>';
     }
 });
 loadEnv(dirname(__DIR__) . '/.env');

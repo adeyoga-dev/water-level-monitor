@@ -12,7 +12,7 @@
   const dirty = () =>
     failedSave || JSON.stringify([...new FormData(form)]) !== initial;
   function update() {
-    state.textContent = dirty() ? "Unsaved changes" : "";
+    state.textContent = dirty() ? "Perubahan belum disimpan" : "";
   }
   form.addEventListener("input", update);
   form.addEventListener("change", update);
@@ -23,7 +23,7 @@
     }
     submitting = true;
     button.disabled = true;
-    button.textContent = "Saving…";
+    button.textContent = "Menyimpan…";
     form.setAttribute("aria-busy", "true");
   });
   window.addEventListener("beforeunload", (event) => {
