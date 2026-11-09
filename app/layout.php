@@ -129,7 +129,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                 <?php foreach ($devices as $device): ?>
                     <tr>
                         <td class="text-nowrap"><strong><?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></strong><small class="d-block text-muted">ID: <?= h($device['device_id']) ?></small></td>
-                        <td><span class="badge badge-<?= $device['device_status'] ? 'success' : 'secondary' ?>"><?= $device['device_status'] ? 'Terhubung' : 'Terputus' ?></span></td>
+                        <td><span class="badge badge-<?= $device['device_status'] ? 'success' : 'danger' ?>"><?= $device['device_status'] ? 'Terhubung' : 'Terputus' ?></span></td>
                         <td class="text-nowrap"><strong><?= $device['water_level'] === null ? '—' : h(number_format((float)$device['water_level'], 2)) ?></strong> <span class="text-muted">cm</span></td>
                         <td><span class="badge badge-<?= [0 => 'success', 1 => 'warning', 2 => 'danger'][$device['alert_status'] ?? -1] ?? 'secondary' ?>"><?= h($device['water_level'] === null ? 'Belum ada pembacaan' : uiText(alertLabel($device['alert_status']))) ?></span></td>
                         <td class="text-nowrap"><?= $device['buzzer_status'] ? 'Aktif' : 'Nonaktif' ?><small class="d-block text-muted">Ambang batas &gt; <?= h($device['alarm_threshold']) ?> cm</small></td>
@@ -227,7 +227,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                         <h2 class="h4 mb-1"><?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></h2>
                         <p class="flow-device-id text-muted mb-0"><?= h($device['device_id']) ?></p>
                     </div>
-                    <span class="badge badge-<?= ($viewer || $device['device_status']) ? 'success' : 'secondary' ?>"><?= ($viewer || $device['device_status']) ? 'Terhubung' : 'Terputus' ?></span>
+                    <span class="badge badge-<?= ($viewer || $device['device_status']) ? 'success' : 'danger' ?>"><?= ($viewer || $device['device_status']) ? 'Terhubung' : 'Terputus' ?></span>
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">

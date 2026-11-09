@@ -63,7 +63,7 @@ pageStart('Peta', 'maps', $viewer);
                 <?php foreach ($devices as $device): ?>
                     <tr>
                         <td><strong><?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></strong></td>
-                        <td><span class="badge badge-<?= ($viewer || $device['device_status']) ? 'success' : 'secondary' ?>"><?= ($viewer || $device['device_status']) ? 'Terhubung' : 'Terputus' ?></span></td>
+                        <td><span class="badge badge-<?= ($viewer || $device['device_status']) ? 'success' : 'danger' ?>"><?= ($viewer || $device['device_status']) ? 'Terhubung' : 'Terputus' ?></span></td>
                         <td class="text-nowrap"><?php if (($device['latitude'] ?? null) !== null && ($device['longitude'] ?? null) !== null): ?><?= h($device['latitude']) ?>, <?= h($device['longitude']) ?><?php else: ?><span class="text-muted">Belum diatur</span><?php endif ?></td>
                         <td>
                             <div class="d-flex flex-wrap flow-map-actions">

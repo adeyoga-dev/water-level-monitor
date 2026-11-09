@@ -656,18 +656,49 @@ legend {
   display: flex;
   align-items: center;
   justify-content: center;
+  --map-pin-color: var(--primary);
+}
+.flow-map-marker::before {
+  content: "";
+  position: absolute;
+  width: var(--map-pin-size);
+  height: var(--map-pin-size);
+  background: var(--map-pin-color);
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  animation: flow-map-pulse var(--map-pulse-duration) ease-out infinite;
+}
+@keyframes flow-map-pulse {
+  from {
+    transform: scale(1);
+    opacity: var(--map-pulse-opacity);
+  }
+  to {
+    transform: scale(var(--map-pulse-scale));
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-map-marker::before {
+    animation: none;
+    display: none;
+  }
 }
 .flow-map-pin {
+  position: relative;
   width: var(--map-pin-size);
   height: var(--map-pin-size);
   border: var(--space-1) solid var(--canvas);
   border-radius: var(--radius-full) var(--radius-full) var(--radius-full) 0;
   transform: rotate(-45deg);
-  background: var(--primary);
+  background: var(--map-pin-color);
   box-shadow: 0 0 0 var(--border-width) var(--ink);
 }
-.flow-map-marker.is-online .flow-map-pin {
-  background: var(--accent-green);
+.flow-map-marker.is-online {
+  --map-pin-color: var(--accent-green);
+}
+.flow-map-marker.is-offline {
+  --map-pin-color: var(--accent-red);
 }
 .flow-map-marker:focus-visible {
   outline: var(--focus-width) solid var(--accent-blue-info);

@@ -55,6 +55,10 @@
   --map-mobile-height: 360px;
   --map-marker-size: 44px;
   --map-pin-size: 28px;
+  --map-pulse-duration: 2s;
+  --map-pulse-scale: 2.4;
+  --map-pulse-opacity: 0.35;
+  --map-hover-delay: 200ms;
   --font-sans: Inter, Arial, sans-serif;
   --font-mono: Inconsolata, "DM Mono", monospace;
   --font-xs: 12px;

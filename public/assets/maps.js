@@ -30,6 +30,25 @@
   });
   L.control.zoom({ zoomInTitle: "Perbesar peta", zoomOutTitle: "Perkecil peta" }).addTo(map);
   const markers = new Map();
+  let allPopupsOpen = false;
+  let hoverTimer;
+  function closePopups() {
+    clearTimeout(hoverTimer);
+    allPopupsOpen = false;
+    for (const marker of markers.values()) marker.closePopup();
+  }
+  function previewMarker(marker) {
+    clearTimeout(hoverTimer);
+    if (allPopupsOpen) return;
+    closePopups();
+    marker.openPopup();
+  }
+  function endPreview(marker) {
+    clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(() => {
+      if (!allPopupsOpen) marker.closePopup();
+    }, parseFloat(tokens.getPropertyValue("--map-hover-delay")));
+  }
   let overview = true;
   let tileErrors = 0;
   let tileTimer;
@@ -70,7 +89,7 @@
     container.setAttribute("aria-busy", "false");
     status.textContent = tileErrors
       ? "Sebagian gambar peta gagal dimuat"
-      : `${devices.length} lokasi perangkat · Pilih penanda untuk melihat informasi`;
+      : `${devices.length} lokasi perangkat · Arahkan penunjuk untuk melihat informasi; klik pin untuk menampilkan atau menutup semua informasi`;
     error.hidden = tileErrors === 0;
     if (tileErrors)
       error.textContent =
@@ -84,14 +103,25 @@
     title.className = "h6";
     title.textContent = device.station_name;
     const badge = document.createElement("span");
-    badge.className = `badge badge-${device.online ? "success" : "secondary"}`;
+    badge.className = `badge badge-${device.online ? "success" : "danger"}`;
     badge.textContent = device.online ? "Terhubung" : "Terputus";
     const reading = document.createElement("p");
     reading.className = "mb-2 mt-2";
     reading.textContent =
       device.level === null
         ? "Belum ada pembacaan"
-        : `${device.level.toFixed(1)} cm · ${device.alert}`;
+        : `${device.level.toFixed(1)} cm `;
+    if (device.level !== null) {
+      const alertBadge = document.createElement("span");
+      const alertColor = {
+        "Siaga 1": "success",
+        "Siaga 2": "warning",
+        "Siaga 3": "danger",
+      }[device.alert] || "secondary";
+      alertBadge.className = `badge badge-${alertColor}`;
+      alertBadge.textContent = device.alert;
+      reading.append(alertBadge);
+    }
     const location = document.createElement("p");
     location.className = "small text-muted mb-2";
     location.textContent = `${device.latitude}, ${device.longitude}`;
@@ -111,7 +141,7 @@
     zoomOut.className = "btn btn-primary";
     zoomOut.textContent = "Perbesar";
     zoomOut.addEventListener("click", () => {
-      map.closePopup();
+      closePopups();
       map.setView([device.latitude, device.longitude], map.getMaxZoom(), {
         animate: false,
       });
@@ -139,12 +169,45 @@
       }),
     })
       .addTo(map)
-      .bindPopup(popup, { maxWidth: 260 });
+      .bindPopup(popup, {
+        maxWidth: 260,
+        autoClose: false,
+        closeOnClick: false,
+        autoPan: false,
+      });
+    // Replace Leaflet's single-popup click toggle with the shared toggle.
+    marker.off("click");
+    marker.on("click", () => {
+      if (allPopupsOpen) {
+        closePopups();
+      } else {
+        clearTimeout(hoverTimer);
+        allPopupsOpen = true;
+        for (const item of markers.values()) item.openPopup();
+      }
+    });
+    marker.on("mouseover", () => previewMarker(marker));
+    marker.on("mouseout", () => endPreview(marker));
+    marker.getElement().addEventListener("focus", () => previewMarker(marker));
+    marker.getElement().addEventListener("blur", () => endPreview(marker));
+    popup.addEventListener("mouseenter", () => clearTimeout(hoverTimer));
+    popup.addEventListener("mouseleave", () => endPreview(marker));
+    popup.addEventListener("focusin", () => clearTimeout(hoverTimer));
+    popup.addEventListener("focusout", (event) => {
+      if (!popup.contains(event.relatedTarget)) endPreview(marker);
+    });
+    marker.on("popupclose", () => {
+      if (allPopupsOpen) closePopups();
+    });
     markers.set(String(device.id), marker);
   }
   reset.disabled = false;
+  map.on("click", closePopups);
+  container.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closePopups();
+  });
   reset.addEventListener("click", () => {
-    map.closePopup();
+    closePopups();
     showIndonesia();
   });
   for (const button of focusButtons) {
@@ -158,11 +221,13 @@
         block: "center",
       });
       map.setView(marker.getLatLng(), 14, { animate: false });
+      closePopups();
       marker.openPopup();
       marker.getElement()?.focus({ preventScroll: true });
     });
   }
   window.addEventListener("pagehide", () => {
+    clearTimeout(hoverTimer);
     clearTimeout(tileTimer);
     map.remove();
   });
