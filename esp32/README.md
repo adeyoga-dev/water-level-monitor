@@ -8,7 +8,25 @@ Sketch: `WaterLevelMonitor/WaterLevelMonitor.ino`.
 2. Install **ArduinoJson 7.x** melalui Library Manager. WiFi, HTTPClient, Update, dan mbedTLS tersedia dalam core ESP32.
 3. Pilih board sebenarnya dan skema partisi yang mendukung OTA dengan dua slot aplikasi yang cukup besar untuk binary. Jangan gunakan skema No OTA.
 4. Isi `WIFI_SSID`, `WIFI_PASSWORD`, `SERVER_URL`, `DEVICE_ID`, `FIRMWARE_VERSION`, `SENSOR_MOUNT_HEIGHT_CM`, `BUZZER_PIN`, dan polaritas buzzer. `SERVER_URL` harus IP komputer/server yang dapat dijangkau ESP32, bukan `localhost`.
-5. Daftarkan `DEVICE_ID` yang sama pada dashboard.
+5. Daftarkan `DEVICE_ID` yang sama persis pada menu **Perangkat**, termasuk huruf besar/kecil. **Nama Pos Pantau** adalah nama tampilan yang dapat diubah; bukan pengganti `DEVICE_ID` dalam sketch atau payload API.
+
+### Contoh pengaturan sebelum upload
+
+```cpp
+const char* WIFI_SSID = "NamaWifi";
+const char* WIFI_PASSWORD = "PasswordWifi";
+const String SERVER_URL = "http://192.168.1.10:8000";
+const String DEVICE_ID = "ESP32-001";
+const float SENSOR_MOUNT_HEIGHT_CM = 200.0f;
+```
+
+Ganti contoh Wi-Fi dengan jaringan yang dapat menjangkau server. Samakan `SERVER_URL` tanpa garis miring penutup dengan `APP_URL` di `.env`, termasuk protokol, host, dan port. IP di atas hanya contoh, bukan hasil deteksi jaringan. Server harus melayani folder `public` sebagai document root.
+
+```dotenv
+APP_URL=http://192.168.1.10:8000
+```
+
+Web membentuk `ota_url` dari `APP_URL`; sketch hanya menerima URL OTA yang diawali `SERVER_URL + "/api/firmware-download.php?id="`. Bila `.env` masih memakai `localhost` atau alamat berbeda, telemetry bisa berhasil tetapi OTA dilewati. Jangan menyalin kredensial Admin ke firmware.
 
 Contoh menggunakan buzzer aktif pada GPIO 25. Sesuaikan pin/rangkaian dengan board dan gunakan driver yang sesuai kebutuhan arus buzzer.
 
@@ -28,6 +46,8 @@ GPIO 27 dikonfigurasi sebagai TX UART2 ESP32 tetapi tidak disambungkan ke sensor
 Jika sensor diberi 5 V, pastikan level TX aman untuk GPIO 3,3 V. Gunakan level shifter bila TX berlevel 5 V; jangan menghubungkan sinyal 5 V langsung ke ESP32. Buzzer aktif tetap GPIO 25 melalui driver/transistor sesuai arus beban dan `BUZZER_ACTIVE_HIGH`.
 
 Pasang muka sensor menghadap tegak lurus permukaan. Ukur jarak dari **muka sensor ke titik acuan tinggi air nol**, kemudian masukkan ke `SENSOR_MOUNT_HEIGHT_CM` (contoh awal 200 cm, wajib sesuaikan pemasangan). Rumus: `water_level = SENSOR_MOUNT_HEIGHT_CM - jarak_permukaan`. Contoh pemasangan 200 cm dengan jarak terukur 75 cm menghasilkan tinggi air 125 cm. Nilai yang dikirim adalah tinggi air, bukan jarak sensor.
+
+Titik acuan nol dapat berupa dasar bak atau patokan elevasi yang ditetapkan untuk sungai, bukan permukaan air saat pemasangan. Jika jarak muka sensor ke acuan nol adalah 500 cm, isi `500.0f`. Nilai ini merupakan kalibrasi dalam sketch; mengubah nama pos, koordinat, atau batas Siaga di web tidak mengubahnya. Kode menerima tinggi pemasangan lebih dari 28 cm sampai 750 cm.
 
 UART diatur **9600 baud, 8N1**, frame empat byte `[0xFF, DATA_H, DATA_L, SUM]`. Checksum adalah `(0xFF + DATA_H + DATA_L) & 0xFF`. Jarak dalam mm adalah `(DATA_H << 8) | DATA_L`, kemudian dibagi 10 menjadi cm. Contoh frame `FF 07 A1 A7` berarti 1953 mm = 195,3 cm; dengan pemasangan 200 cm, tinggi air 4,7 cm.
 
@@ -79,4 +99,4 @@ Flash firmware awal melalui USB. Semua perangkat harus menggunakan board dan sus
 
 Sketch belum dikompilasi dengan toolchain ESP32 atau diuji pada perangkat fisik dalam lingkungan ini.
 
-Terakhir diperbarui: 7 November 2026. Pengguna: operator perangkat Flow. Owner/PIC dan maintainer: Not confirmed. Tidak ada perubahan skema database atau endpoint server.
+Terakhir diperbarui: 9 November 2026. Pengguna: operator perangkat. Owner/PIC dan maintainer: Not confirmed. Pembaruan dokumentasi ini tidak mengubah firmware, skema database, atau endpoint server.

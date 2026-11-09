@@ -2,6 +2,10 @@
 
 Contoh base URL: `http://192.168.1.10:8000`. Endpoint perangkat `telemetry.php`, `device-config.php`, dan `firmware-download.php` tetap tanpa login atau token. Endpoint browser `dashboard.php` dan `device-history.php` membutuhkan session Admin: guest menerima 401. Daftarkan `device_id` di dashboard sebagai Admin terlebih dahulu; huruf besar/kecil dibedakan.
 
+`station_name` (Nama Pos Pantau) dikelola melalui form Perangkat dan tidak wajib maupun digunakan oleh endpoint telemetry. ESP32 tetap mengirim `device_id` permanen; perubahan nama pos tidak membutuhkan perubahan sketch.
+
+Samakan `APP_URL` pada web dengan `SERVER_URL` pada sketch, menggunakan alamat yang dapat dijangkau ESP32. Respons `ota_url` dibentuk dari `APP_URL`; sketch menolak URL download yang tidak memakai awalan server yang dikonfigurasi. Contoh `localhost` di bawah hanya untuk pengujian dari komputer server. Sketch saat ini menggunakan HTTP; mengganti URL menjadi HTTPS saja tidak menambahkan dukungan TLS.
+
 ## POST `/api/telemetry.php`
 
 Gunakan `Content-Type: application/json`. Ukuran body maksimum 16 KB.
@@ -142,8 +146,8 @@ Halaman detail secara default memakai 30 hari terakhir termasuk hari ini berdasa
 
 Grafik periode menampilkan garis rata-rata, minimum, dan maksimum dengan tooltip jumlah pembacaan. Titik, label menit/jam/tanggal/bulan/tahun, dan jumlah label sumbu menyesuaikan interval serta lebar layar. Mode menit memakai label `HH:mm` dan tooltip tanggal/jam lengkap. Interval kosong menjadi celah garis; pembacaan terisolasi tetap ditampilkan sebagai titik meskipun intervalnya padat. Klasifikasi Siaga tetap tersedia pada indikator pembacaan terkini; rata-rata periode tidak diberi klasifikasi historis palsu. Zona waktu dikelola PHP, termasuk perubahan DST, tanpa membutuhkan tabel zona waktu MySQL.
 
-Endpoint hanya membaca database dan tidak menambah log atau memperbarui status perangkat. Perangkat tak terdaftar menghasilkan `404`, identifier/filter tidak valid menghasilkan `422`, dan metode selain GET menghasilkan `405`. Halaman detail mengembalikan `404` untuk identifier tidak valid atau perangkat tidak ditemukan, serta `422` untuk filter invalid. Akses tetap publik sesuai model akses aplikasi saat ini.
+Endpoint hanya membaca database dan tidak menambah log atau memperbarui status perangkat. Perangkat tak terdaftar menghasilkan `404`, identifier/filter tidak valid menghasilkan `422`, dan metode selain GET menghasilkan `405`. Halaman detail mengembalikan `404` untuk identifier tidak valid atau perangkat tidak ditemukan, serta `422` untuk filter invalid. Halaman dan API riwayat memerlukan login Admin; pengunjung tanpa login tidak memiliki akses riwayat.
 
 Halaman menyediakan Refresh manual dan polling berurutan setiap 5 detik setelah request selesai untuk filter yang telah diterapkan. Perubahan filter menjeda polling, membatalkan request lama, dan mempertahankan draft. Respons usang diabaikan; kegagalan memuat tidak menghapus chart terakhir atau draft filter. Permintaan ganda dicegah dan request dibatalkan setelah 15 detik. Tombol **Today** mengembalikan periode ke hari ini dengan konfirmasi jika ada draft yang akan dibuang; navigasi juga memperingatkan draft belum diterapkan. Riwayat kosong menampilkan pesan tanpa data simulasi. Library lokal yang gagal dimuat menampilkan error dan tombol **Reload page**. Daftar log individual tetap tersedia pada halaman Sensor logs.
 
-Terakhir diperbarui: 6 November 2026. Departemen peminta, owner/PIC, dan maintainer: Not confirmed. Pengguna: pemantau perangkat. Tidak ada perubahan schema, konfigurasi database, atau kontrak telemetry ESP32.
+Terakhir diperbarui: 9 November 2026. Departemen peminta, owner/PIC, dan maintainer: Not confirmed. Pengguna: pemantau perangkat. Pembaruan dokumentasi ini memperjelas identitas perangkat, alamat OTA, dan akses Admin tanpa mengubah kontrak telemetry ESP32.

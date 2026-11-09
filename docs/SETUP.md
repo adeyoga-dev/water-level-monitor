@@ -60,7 +60,7 @@ Schema sebelumnya memakai nama tabel rentang dalam bahasa Indonesia. Jika sudah 
 
 ### Maps dan koordinat perangkat
 
-- URL: `/maps.php`, input lokasi pada `/device-edit.php?id=ID` melalui menu Devices. Owner/PIC, departemen, dan maintainer: Not confirmed. Pengguna mengikuti akses admin publik aplikasi yang sudah ada; tidak ada login/role baru.
+- URL Admin: `/maps.php`, input lokasi pada `/device-edit.php?id=ID` melalui menu Perangkat; keduanya memerlukan login Admin. Pengunjung tanpa login memakai `/viewer-maps.php` dan tidak dapat mengubah lokasi. Owner/PIC, departemen, dan maintainer: Not confirmed.
 - Leaflet **1.9.4 stable** disimpan lokal di `public/assets/vendor/leaflet-1.9.4/` dengan lisensi BSD-2-Clause. Peta dasar memakai `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, dengan atribusi OpenStreetMap yang tetap terlihat. Gambar peta memerlukan internet; tidak disediakan pengunduhan offline/prefetch massal. Ikuti [kebijakan tile OSM](https://operations.osmfoundation.org/policies/tiles/).
 - Tampilan awal mencakup Indonesia (batas tampilan sekitar 94,5â€“141,5 BT dan 11,5 LSâ€“6,5 LU), termasuk jika belum ada perangkat berkoordinat. Peta tidak otomatis memperbesar kumpulan pin saat dibuka.
 - Paste pasangan angka `latitude, longitude` dari Google Maps menggunakan titik desimal, misalnya `-7.566712, 110.833458`. Link berbagi Google Maps tidak diproses. Latitude valid -90 sampai 90; longitude -180 sampai 180; koordinat nol valid. Presisi penyimpanan tujuh angka desimal.
@@ -85,7 +85,7 @@ DB_PASSWORD="your_mysql_password"
 DB_CHARSET=utf8mb4
 ```
 
-- `APP_URL` adalah URL root aplikasi yang dapat dijangkau ESP32, tanpa `/public` atau `/api`. Gunakan IP LAN/domain; `localhost` pada ESP32 merujuk perangkat itu sendiri.
+- `APP_URL` adalah URL root aplikasi yang dapat dijangkau ESP32, tanpa `/public` atau `/api`. Gunakan IP LAN/domain; `localhost` pada ESP32 merujuk perangkat itu sendiri. Samakan dengan `SERVER_URL` pada sketch, termasuk protokol, host, dan port, tanpa garis miring penutup. Perbedaan alamat membuat URL OTA ditolak oleh sketch meskipun telemetry berhasil.
 - Host, port, username, dan password database harus sesuai instance Anda. Ganti nilai contoh `your_mysql_user` dan `your_mysql_password` dengan kredensial sebenarnya.
 - Nilai berpetik mempertahankan spasi, `#`, dan `=`. Tanda petik luar dibuang; escape dan interpolasi tidak diproses. Komentar ditulis pada baris terpisah yang diawali `#`; komentar di belakang nilai tidak didukung.
 - Variabel lingkungan proses lebih diutamakan daripada isi `.env`.
@@ -138,7 +138,7 @@ Batas aplikasi tetap 16 MB meskipun limit PHP lebih tinggi. File disimpan sebaga
 
 Nama Pos Pantau adalah identitas utama pada dashboard Admin/viewer, peta dan popup, daftar perangkat, filter/catatan sensor, serta panel riwayat. Isian wajib, maksimal 150 karakter Unicode tanpa karakter kontrol, dapat diubah dan tidak harus unik. Device ID tetap identitas teknis permanen untuk ESP32, filter URL, serta relasi logs; mengganti nama tidak mengubah ID atau logs lama. Catatan sensor menampilkan nama pos saat ini, bukan salinan nama historis.
 
-Instalasi baru sudah memiliki `devices.station_name` pada `schema.sql`. Database lama membutuhkan `database/migrations/004_station_name.sql`: preview `php scripts/migrate-station-name.php`, lalu setelah persetujuan eksplisit jalankan dengan `--apply`. Kolom nullable untuk mempertahankan data lama tanpa mengarang nama; tampilan memakai “Pos pantau belum dinamai” sampai Admin mengisinya melalui Ubah perangkat. Migrasi database aplikasi belum dijalankan oleh pembaruan kode ini.
+Instalasi baru sudah memiliki `devices.station_name` pada `schema.sql`. Database lama membutuhkan `database/migrations/004_station_name.sql`: preview `php scripts/migrate-station-name.php`, lalu setelah persetujuan eksplisit jalankan dengan `--apply`. Kolom nullable untuk mempertahankan data lama tanpa mengarang nama; tampilan memakai “Pos pantau belum dinamai” sampai Admin mengisinya melalui Ubah perangkat. Pada database lokal `water_level_detection`, migrasi telah dijalankan dengan persetujuan pengguna pada 9 November 2026 dan data bisnis lama diverifikasi tetap utuh. Instalasi lain perlu diperiksa melalui mode preview sebelum migrasi.
 
 1. Buka **Devices â†’ Add device**.
 2. Isi ID unik yang membedakan huruf besar/kecil, misalnya `ESP32-001`: 1â€“64 huruf ASCII, angka, `-`, atau `_`.
