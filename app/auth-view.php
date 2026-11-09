@@ -21,7 +21,7 @@
             <section class="col-md-8 col-lg-5">
                 <div class="card">
                     <div class="card-body">
-                        <a class="flow-logo d-flex align-items-center text-decoration-none mb-4" href="/login.php"><img class="flow-brand-mark" src="/assets/images/flow-mark-blue.svg" alt="" width="36" height="36">Flow</a>
+                        <a class="flow-logo d-flex align-items-center text-decoration-none mb-4" href="/login.php"><img class="flow-brand-mark" src="/assets/images/flow-mark-blue.svg" alt="" width="36" height="36">SIPATA</a>
                         <h1 class="h3 mb-4"><?= h($title) ?></h1>
                         <?php if ($error): ?><div class="alert alert-danger" role="alert"><?= h(uiText($error)) ?></div><?php endif ?>
                         <?php if ($message ?? null): ?><div class="alert alert-success" role="status"><?= h($message) ?></div><?php endif ?>
