@@ -4,8 +4,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= h($title) ?> · Flow</title>
-    <link rel="icon" href="/assets/images/flow-mark.svg">
+    <title><?= h($title) ?> · SIPATA</title>
+    <link rel="icon" href="/assets/images/flow-mark-blue.svg">
     <link rel="stylesheet" href="/assets/vendor/bootstrap-4.6.2-dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="/assets/css/design-tokens.css">
     <link rel="stylesheet" href="/assets/css/theme.css">
@@ -17,7 +17,7 @@
             <section class="col-md-8 col-lg-5">
                 <div class="card">
                     <div class="card-body">
-                        <a class="flow-logo d-flex align-items-center text-decoration-none mb-4" href="/login.php"><img class="flow-brand-mark" src="/assets/images/flow-mark.svg" alt="" width="36" height="36">Flow</a>
+                        <a class="flow-logo d-flex align-items-center text-decoration-none mb-4" href="/login.php"><img class="flow-brand-mark" src="/assets/images/flow-mark-blue.svg" alt="" width="36" height="36">Flow</a>
                         <h1 class="h3 mb-4"><?= h($title) ?></h1>
                         <?php if ($error): ?><div class="alert alert-danger" role="alert"><?= h($error) ?></div><?php endif ?>
                         <?php if ($message ?? null): ?><div class="alert alert-success" role="status"><?= h($message) ?></div><?php endif ?>

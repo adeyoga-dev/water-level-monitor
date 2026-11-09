@@ -718,3 +718,283 @@ legend {
     padding: var(--space-6) !important;
   }
 }
+
+/* ============================================================
+   AdminLTE 4-inspired compact spacing layer
+   Compatible with the existing Bootstrap-based flow markup.
+   Place after design-token.css; no AdminLTE JS dependency.
+   ============================================================ */
+
+:root {
+  --ui-page: #f4f6f9;
+  --ui-gap: 16px;
+  --ui-card-pad: 16px;
+  --ui-control-height: 36px;
+}
+
+body {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+/* Application shell: compact navigation with a quiet content surface */
+body .flow-sidebar {
+  padding: 14px 12px !important;
+}
+.flow-logo {
+  min-height: 40px;
+  gap: 10px;
+}
+.flow-sidebar .nav-link {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.flow-sidebar .nav-link + .nav-link {
+  margin-top: 2px;
+}
+.flow-topbar,
+.flow-footer {
+  padding: 12px 20px !important;
+  gap: 8px;
+}
+body .flow-main {
+  padding: 20px !important;
+  background: var(--ui-page);
+}
+.flow-title {
+  font-size: clamp(26px, 2.5vw, 34px);
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+.flow-eyebrow {
+  font-size: 12px;
+  letter-spacing: 1px;
+  margin-bottom: 6px !important;
+}
+
+/* Grid gutters: Bootstrap-compatible selectors */
+.container-fluid {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.row {
+  margin-left: -8px;
+  margin-right: -8px;
+}
+.row > [class*="col-"] {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.form-row {
+  margin-left: -5px;
+  margin-right: -5px;
+}
+.form-row > [class*="col-"] {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+/* Bootstrap spacing overrides already present in the original theme */
+.mb-3,
+.form-group {
+  margin-bottom: 12px !important;
+}
+.mb-4 {
+  margin-bottom: 16px !important;
+}
+.mt-3 {
+  margin-top: 12px !important;
+}
+.mt-4 {
+  margin-top: 16px !important;
+}
+.p-3 {
+  padding: 12px !important;
+}
+.pt-3 {
+  padding-top: 12px !important;
+}
+.pb-3 {
+  padding-bottom: 12px !important;
+}
+.py-4 {
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+}
+.py-5 {
+  padding-top: 24px !important;
+  padding-bottom: 24px !important;
+}
+
+/* Cards: like recent admin dashboards, flat with restrained borders */
+.card {
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.045);
+}
+.card-body {
+  padding: var(--ui-card-pad);
+}
+.card-header,
+.card-footer {
+  padding: 12px var(--ui-card-pad);
+  gap: 8px;
+}
+.card-header:first-child {
+  border-radius: 6px 6px 0 0;
+}
+.card-footer:last-child {
+  border-radius: 0 0 6px 6px;
+}
+.flow-stats .card-body {
+  padding: 14px 16px !important;
+  gap: 8px;
+}
+.flow-stats strong {
+  font-size: 27px;
+  line-height: 1.1;
+}
+.flow-stats h2 {
+  margin-bottom: 4px;
+}
+.flow-stat-icon {
+  width: 38px;
+  height: 38px;
+  padding: 8px !important;
+}
+.flow-device-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.055);
+}
+.flow-device-card .card-header h2 {
+  font-size: 19px;
+}
+.flow-level strong {
+  font-size: 44px;
+}
+
+/* Forms and actions: compact without excessively small type */
+.btn,
+.btn-sm,
+.pagination .page-link,
+.form-control,
+.form-control-sm {
+  min-height: var(--ui-control-height);
+  font-size: 14px;
+  line-height: 1.35;
+}
+.btn {
+  padding: 7px 12px;
+}
+.btn-sm {
+  padding: 6px 10px;
+}
+.form-control,
+.form-control:focus,
+.form-control[readonly],
+.form-control:disabled {
+  padding: 7px 10px;
+}
+label,
+legend {
+  margin-bottom: 5px;
+}
+.form-check-label {
+  min-height: 36px;
+}
+.form-check-input {
+  margin-top: 11px;
+}
+
+/* Tables should fit more records without becoming cramped */
+.table {
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+.table th,
+.table td {
+  padding: 9px 12px;
+}
+.table thead th,
+.table .thead-light th {
+  font-size: 11px;
+  letter-spacing: 0.45px;
+}
+.table a:not(.btn) {
+  min-height: 32px;
+}
+.pagination .page-link,
+.page-item.disabled .page-link {
+  padding: 7px 11px;
+}
+.badge {
+  padding: 3px 7px;
+  font-size: 12px;
+}
+.alert {
+  padding: 12px 14px;
+}
+
+/* Utilities and map: preserve meaningful height for data visualizations */
+.flow-viewer-header {
+  padding: 12px 20px;
+  gap: 12px;
+}
+.flow-map .leaflet-popup-content {
+  margin: 14px;
+}
+.flow-map-actions,
+.flow-auth-actions,
+.flow-viewer-nav {
+  gap: 8px;
+}
+
+/* Responsive: generous enough for touch screens */
+@media (pointer: coarse) {
+  .flow-sidebar .nav-link,
+  .btn,
+  .btn-sm,
+  .pagination .page-link,
+  .form-control,
+  .form-control-sm,
+  .table a:not(.btn) {
+    min-height: var(--touch-target);
+  }
+}
+@media (max-width: 767.98px) {
+  body .flow-sidebar {
+    padding: 12px !important;
+  }
+  body .flow-main {
+    padding: 12px !important;
+  }
+  .flow-topbar,
+  .flow-footer {
+    padding: 12px 16px !important;
+  }
+  .flow-viewer-header {
+    padding: 12px;
+  }
+  .card-body {
+    padding: 14px;
+  }
+  .card-header,
+  .card-footer {
+    padding: 11px 14px;
+  }
+  .flow-stats .card-body {
+    padding: 14px !important;
+  }
+  .flow-title {
+    font-size: 26px;
+  }
+  .flow-sidebar .nav-link,
+  .btn,
+  .btn-sm,
+  .pagination .page-link,
+  .form-control,
+  .form-control-sm,
+  .table a:not(.btn) {
+    min-height: var(--touch-target);
+  }
+}

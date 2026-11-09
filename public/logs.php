@@ -38,7 +38,7 @@ $logs = query('SELECT * FROM sensor_logs' . $where . ' ORDER BY created_at DESC,
 $devices = query('SELECT device_id FROM devices ORDER BY device_id')->fetchAll();
 $link = fn($p) => '?' . http_build_query(['device_id' => $device, 'alarm_status' => $status, 'from' => $from, 'to' => $to, 'page' => $p]);
 pageStart('Sensor logs', 'logs');
-pageTitle('SENSOR HISTORY', 'Sensor logs', 'Review water level history and alert classifications recorded when readings were received.');
+// pageTitle('SENSOR HISTORY', 'Sensor logs', 'Review water level history and alert classifications recorded when readings were received.');
 ?>
 <?php if ($error): ?><div class="alert alert-danger" role="alert"><?= h($error) ?></div><?php endif ?>
 <form class="card card-body mb-4" method="get">

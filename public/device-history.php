@@ -23,7 +23,9 @@ try {
 pageStart('Device history', 'dashboard');
 ?>
 <a class="d-inline-block mb-3" href="/">← Back to dashboard</a>
-<?php pageTitle('DEVICE HISTORY', 'Water level details & history', $history['device']['device_id']); ?>
+<?php
+// pageTitle('DEVICE HISTORY', 'Water level details & history', $history['device']['device_id']);
+?>
 <div class="row">
     <div class="col-xl-6">
         <div class="row" id="history-device"><?php waterLevelPanels([$history['device']], true) ?></div>

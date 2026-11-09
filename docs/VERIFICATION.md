@@ -18,7 +18,7 @@ Pengujian session terpisah mencakup session lama, kedaluwarsa delapan jam, perga
 
 ## Tema Flow / Webflow â€” 6 November 2026
 
-Identitas Flow memakai logo tiga gelombang putih pada kotak hitam, tersimpan di `public/assets/images/flow-mark.svg`. Layout bersama memakainya untuk sidebar (36 px), footer (24 px), dan favicon SVG seluruh halaman. Ukuran mengikuti design tokens; gambar dekoratif didampingi teks Flow dan tautan sidebar memiliki nama aksesibel. Tidak membutuhkan CDN, build, atau perubahan logic aplikasi.
+Identitas Flow memakai logo tiga gelombang putih pada kotak hitam, tersimpan di `public/assets/images/flow-mark-blue.svg`. Layout bersama memakainya untuk sidebar (36 px), footer (24 px), dan favicon SVG seluruh halaman. Ukuran mengikuti design tokens; gambar dekoratif didampingi teks Flow dan tautan sidebar memiliki nama aksesibel. Tidak membutuhkan CDN, build, atau perubahan logic aplikasi.
 
 Pembaruan animasi permukaan air: garis biru pada panel Dashboard/detail menggunakan gelombang SVG dengan animasi CSS, dibatasi area plot. Tinggi acuan, skala, pembacaan sensor, dan logika JavaScript tidak berubah. Mode `prefers-reduced-motion` menampilkan garis datar semula; perangkat tanpa pembacaan tidak menampilkan gelombang. Verifikasi ulang lulus 111 pemeriksaan logika/API dan 54 pemeriksaan browser, termasuk gerakan gelombang serta reduced motion pada desktop/mobile. Screenshot gelombang desktop diperiksa.
 

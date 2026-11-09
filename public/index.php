@@ -6,7 +6,7 @@ $viewer = defined('FLOW_VIEWER') && FLOW_VIEWER;
 $devices = deviceList(!$viewer);
 $online = $viewer ? count($devices) : count(array_filter($devices, fn($d) => (int)$d['device_status'] === 1));
 pageStart('Dashboard', 'dashboard', $viewer);
-pageTitle('OVERVIEW', 'Monitor water. Stay informed.', 'Device status and water levels, all in one place.');
+// pageTitle('OVERVIEW', 'Monitor water. Stay informed.', 'Device status and water levels, all in one place.');
 ?>
 <div class="flow-stats row mx-n2 mb-2">
     <div class="col-md-6 col-lg-4 px-2 mb-3">
@@ -57,7 +57,7 @@ pageTitle('OVERVIEW', 'Monitor water. Stay informed.', 'Device status and water 
         </article>
     </div>
 </div>
-<p class="small text-muted" id="refresh-status" role="status" aria-live="polite">Refreshes every 5 seconds</p>
+<!-- <p class="small text-muted" id="refresh-status" role="status" aria-live="polite">Refreshes every 5 seconds</p> -->
 <div class="row" id="water-level-panels" data-endpoint="<?= $viewer ? '/api/viewer-dashboard.php' : '/api/dashboard.php' ?>" aria-busy="false"><?php waterLevelPanels($devices, false, $viewer) ?></div>
 <script src="/assets/dashboard.js" defer></script>
 <?php pageEnd(); ?>

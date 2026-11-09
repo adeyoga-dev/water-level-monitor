@@ -53,7 +53,7 @@ pageTitle('DEVICE SETTINGS', $id ? 'Edit device' : 'Add device', 'Set the device
                     <div class="form-group">
                         <label for="device-coordinates">Location coordinates</label>
                         <input class="form-control" id="device-coordinates" name="coordinates" maxlength="100" placeholder="M7CM+GJ5 Sukaluyu, Karawang, West Java" value="<?= h(is_string($values['coordinates'] ?? '') ? ($values['coordinates'] ?? '') : '') ?>" aria-describedby="coordinates-help" autocomplete="off" spellcheck="false">
-                        <small class="form-text text-muted" id="coordinates-help">Paste plus code from Google Maps. Use decimal points and a comma between the numbers, not a share link. Leave blank to remove the location. Only the current location is saved.</small>
+                        <small class="form-text text-muted" id="coordinates-help">Paste plus code from Google Maps. Leave blank to remove the location. Only the current location is saved.</small>
                         <a class="small d-inline-block mt-2" href="/maps.php">View device locations →</a>
                     </div>
                     <fieldset class="form-group" aria-describedby="interval-help">

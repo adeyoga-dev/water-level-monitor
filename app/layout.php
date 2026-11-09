@@ -14,8 +14,8 @@ function pageStart(string $title, string $active, bool $viewer = false): void
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title><?= h($title) ?> · Flow</title>
-        <link rel="icon" type="image/svg+xml" sizes="any" href="/assets/images/flow-mark.svg">
+        <title><?= h($title) ?> · SIPATA</title>
+        <link rel="icon" type="image/svg+xml" sizes="any" href="/assets/images/flow-mark-blue.svg">
         <link rel="stylesheet" href="/assets/vendor/bootstrap-4.6.2-dist/css/bootstrap.min.css">
         <?php if ($active === 'maps'): ?>
             <link rel="stylesheet" href="/assets/vendor/leaflet-1.9.4/leaflet.css"><?php endif ?>
@@ -29,10 +29,10 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                 <?php if (!$viewer): ?>
                     <aside class="flow-sidebar col-md-3 col-lg-2 bg-white border-right p-3">
                         <a class="flow-logo h3 d-flex align-items-center mb-1 text-primary text-decoration-none" href="<?= $viewer ? '/viewer.php' : '/' ?>" aria-label="Flow — Dashboard">
-                            <img class="flow-brand-mark" src="/assets/images/flow-mark.svg" width="36" height="36" alt="" aria-hidden="true">
-                            <span>Flow</span>
+                            <img class="flow-brand-mark" src="/assets/images/flow-mark-blue.svg" width="36" height="36" alt="" aria-hidden="true">
+                            <span>SIPATA</span>
                         </a>
-                        <p class="small text-muted mb-4">Water level monitor</p>
+                        <p class="small text-muted mb-4">Sistem Pemantauan Tinggi Air</p>
                         <details class="flow-navigation">
                             <summary><span aria-hidden="true">☰</span> Menu</summary>
                             <nav class="nav flex-column nav-pills" aria-label="Main navigation">
@@ -47,8 +47,8 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                     <?php if ($viewer): ?>
                         <header class="flow-viewer-header border-bottom">
                             <a class="flow-logo h3 d-flex align-items-center text-decoration-none mb-0" href="/viewer.php" aria-label="Flow Dashboard">
-                                <img class="flow-brand-mark" src="/assets/images/flow-mark.svg" width="36" height="36" alt="" aria-hidden="true">
-                                <span>Flow</span>
+                                <img class="flow-brand-mark" src="/assets/images/flow-mark-blue.svg" width="36" height="36" alt="" aria-hidden="true">
+                                <span>SIPATA</span>
                             </a>
                             <nav class="flow-viewer-nav" aria-label="Viewer navigation">
                                 <?php foreach ($navigation as $key => $item): ?>
@@ -82,8 +82,8 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                     </main>
                     <footer class="flow-footer border-top px-3 px-lg-4 py-3 d-flex flex-wrap justify-content-between small text-muted">
                         <span class="flow-footer-brand">
-                            <img class="flow-brand-mark" src="/assets/images/flow-mark.svg" width="24" height="24" alt="" aria-hidden="true">
-                            <span><strong>Flow</strong> · Water level monitoring</span>
+                            <img class="flow-brand-mark" src="/assets/images/flow-mark-blue.svg" width="24" height="24" alt="" aria-hidden="true">
+                            <span><strong>Flow</strong> · Sistem Pemantauan Tinggi Airing</span>
                         </span>
                     </footer>
                 </div>
@@ -223,7 +223,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
             <article class="flow-device-card card h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-start">
                     <div class="mr-3 text-break">
-                        <h2 class="h4 mb-1">Water level monitor</h2>
+                        <h2 class="h4 mb-1">Sistem Pemantauan Tinggi Air</h2>
                         <p class="flow-device-id text-muted mb-0"><?= h($device['device_id']) ?></p>
                     </div>
                     <span class="badge badge-<?= ($viewer || $device['device_status']) ? 'success' : 'secondary' ?>"><?= ($viewer || $device['device_status']) ? 'Online' : 'Offline' ?></span>

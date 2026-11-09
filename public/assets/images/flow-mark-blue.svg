@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>Flow — Water level monitor</title>
+  <rect width="64" height="64" rx="8" fill="#146ef5"/>
+  <g stroke="#ffffff" stroke-width="4.5" stroke-linecap="round">
+    <path d="M14 21C20 15 26 27 32 21S44 15 50 21"/>
+    <path d="M14 32C20 26 26 38 32 32S44 26 50 32"/>
+    <path d="M14 43C20 37 26 49 32 43S44 37 50 43"/>
+  </g>
+</svg>

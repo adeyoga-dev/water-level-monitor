@@ -4,7 +4,7 @@ require dirname(__DIR__) . '/app/admin.php';
 require dirname(__DIR__) . '/app/layout.php';
 $devices = deviceList();
 pageStart('Devices', 'devices');
-pageTitle('DEVICE MANAGEMENT', 'Devices', 'Manage device identities, reporting intervals, and alarm settings.');
+// pageTitle('DEVICE MANAGEMENT', 'Devices', 'Manage device identities, reporting intervals, and alarm settings.');
 ?>
 <div class="card">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center">

@@ -21,7 +21,7 @@ foreach ($devices as $device) {
     ];
 }
 pageStart('Maps', 'maps', $viewer);
-pageTitle('DEVICE LOCATIONS', 'Water monitoring across Indonesia.', $viewer ? 'View current device locations and water levels.' : 'View current device locations. Set or replace coordinates in Devices; location history is not recorded.');
+// pageTitle('DEVICE LOCATIONS', 'Water monitoring across Indonesia.', $viewer ? 'View current device locations and water levels.' : 'View current device locations. Set or replace coordinates in Devices; location history is not recorded.');
 ?>
 <section class="card mb-4" aria-labelledby="maps-title">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
