@@ -23,7 +23,7 @@ $offset = ($page - 1) * 20;
 $firmwares = query('SELECT * FROM firmwares ORDER BY id DESC LIMIT 20 OFFSET ' . $offset)->fetchAll();
 $latest = latestFirmware();
 pageStart('Firmware OTA', 'firmwares');
-pageTitle('PEMBARUAN NIRKABEL', 'Firmware OTA', 'Terbitkan pembaruan firmware untuk semua perangkat ESP32.');
+// pageTitle('PEMBARUAN NIRKABEL', 'Firmware OTA', 'Terbitkan pembaruan firmware untuk semua perangkat ESP32.');
 ?>
 <?php if ($error): ?><div class="alert alert-danger" role="alert"><?= h(uiText($error)) ?></div><?php endif ?>
 <div class="row">
