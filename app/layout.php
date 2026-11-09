@@ -237,6 +237,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                         <div class="col-sm-7 mb-2 mb-sm-0">
                             <span class="badge badge-<?= $statusColor ?>"><?= h($level === null ? 'Belum ada pembacaan' : uiText(alertLabel($device['alert_status']))) ?></span>
                             <p class="flow-level mb-0 mt-2 text-break"><strong class="h2"><?= $level === null ? '—' : h(number_format($level, 1)) ?></strong> <span class="text-muted">cm</span></p>
+                            <small class="d-block text-muted">Tinggi air dari titik acuan nol</small>
                             <small class="text-muted">Skala tampilan: <?= h(number_format($minimum, 1)) ?>–<?= h(number_format($maximum, 1)) ?> cm</small>
                         </div>
                         <?php if (!$viewer): ?><div class="col-sm-5 text-sm-right">

@@ -1,4 +1,6 @@
-// Arduino ESP32 core 3.x; install ArduinoJson 7.x. Select an OTA-capable partition.
+// ESP32 Water Level Monitor - A01ANYUB V2 (UART) + Buzzer + Telemetry + OTA
+// PlatformIO: Espressif ESP32 Dev Module, framework Arduino, library ArduinoJson 7.x
+#include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <Update.h>
@@ -6,29 +8,65 @@
 #include <mbedtls/sha256.h>
 #include <math.h>
 #include <HardwareSerial.h>
+#include <Preferences.h>
+#include <esp_sleep.h>
+#include <driver/gpio.h>
 
-const char* WIFI_SSID = "YOUR_WIFI";
-const char* WIFI_PASSWORD = "YOUR_PASSWORD";
-const String SERVER_URL = "http://192.168.1.10:8000";
-const String DEVICE_ID = "ESP32-001";
+// Kompatibel untuk Arduino core 2.x dan 3.x
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+#define SHA_STARTS(c) mbedtls_sha256_starts((c), 0)
+#define SHA_UPDATE(c, b, l) mbedtls_sha256_update((c), (b), (l))
+#define SHA_FINISH(c, d) mbedtls_sha256_finish((c), (d))
+#else
+#define SHA_STARTS(c) mbedtls_sha256_starts_ret((c), 0)
+#define SHA_UPDATE(c, b, l) mbedtls_sha256_update_ret((c), (b), (l))
+#define SHA_FINISH(c, d) mbedtls_sha256_finish_ret((c), (d))
+#endif
+
+// ===== Pengaturan WiFi & Server =====
+const char *WIFI_SSID = "DIAN K.R";
+const char *WIFI_PASSWORD = "DQR138Bu";
+const String SERVER_URL = "http://192.168.18.51:8000";
+const String DEVICE_ID = "ESP-001";
 const String FIRMWARE_VERSION = "v1.0.0";
-const int BUZZER_PIN = 25; // Active buzzer; adapt pin and voltage to your board.
+
+// ===== Buzzer =====
+const int BUZZER_PIN = 32; // Buzzer aktif di GPIO 32
 const bool BUZZER_ACTIVE_HIGH = true;
-// DYP-A01ANYUB V2 UART auto output; ESP32 DevKit / WROOM-32.
-// Sensor TX -> GPIO 26 at 3.3 V logic. Sensor RX stays unconnected (processed mode).
+
+// ===== Sensor A01ANYUB V2 (UART) =====
+// Sama dengan wiring yang sudah terbukti jalan:
+// Putih (TX sensor) -> GPIO 16, Kuning (RX sensor) -> GPIO 17
 HardwareSerial sensorSerial(2);
-const int SENSOR_RX_PIN = 26;
-const int SENSOR_TX_PIN = 27; // ESP32 UART TX: leave physically unconnected.
+const int SENSOR_RX_PIN = 16;
+const int SENSOR_TX_PIN = 17;
 const uint32_t SENSOR_BAUD = 9600;
-const float SENSOR_MOUNT_HEIGHT_CM = 200.0f; // Sensor face to the zero-water reference.
+const float SENSOR_MOUNT_HEIGHT_CM = 700.0f; // Sensor dipasang 7 m dari dasar, menghadap ke bawah
+// water_level selalu TINGGI air; jarak hanya untuk perhitungan lokal.
 const float SENSOR_MIN_DISTANCE_CM = 28.0f;
 const float SENSOR_MAX_DISTANCE_CM = 750.0f;
-const uint32_t SENSOR_READ_TIMEOUT_MS = 1800;
-const uint32_t FRAME_GAP_TIMEOUT_MS = 50;
-const uint8_t SENSOR_SAMPLES = 5;
-const uint8_t MIN_VALID_SAMPLES = 3;
+const uint32_t SENSOR_STALE_MS = 3000; // data dianggap basi setelah 3 detik
 const uint32_t SENSOR_INTERVAL_MS = 5000;
 const uint32_t OTA_RETRY_MS = 300000;
+
+// ===== Setting manual (dipakai kalau belum pernah dapat config dari server) =====
+const float DEFAULT_ALARM_THRESHOLD = 150.0f; // cm tinggi air; diganti konfigurasi web saat diterima
+const bool DEFAULT_BUZZER_ENABLED = true;
+const uint32_t DEFAULT_INTERVAL_S = 60;
+
+// ===== Mode sleep =====
+// true  = ESP32 deep sleep di antara pengiriman (hemat daya)
+// false = selalu menyala
+const bool SLEEP_ENABLED = false;
+const uint32_t WIFI_TIMEOUT_MS = 15000; // batas tunggu WiFi sebelum lanjut offline
+const uint32_t SENSOR_WARMUP_MS = 2000; // tunggu sensor siap setelah dinyalakan
+
+// ===== Kontrol daya sensor lewat MOSFET (hemat baterai) =====
+// true = sensor hanya diberi daya saat ESP32 bangun, mati total saat sleep
+const bool SENSOR_POWER_CONTROL = false;
+const int SENSOR_POWER_PIN = 33;            // ke Gate MOSFET
+const bool SENSOR_POWER_ACTIVE_HIGH = true; // N-MOSFET low-side = true
+const uint32_t MAX_AWAKE_MS = 30000;        // batas maksimal menyala per siklus
 
 float latestWaterLevel = NAN;
 float alarmThreshold = 0;
@@ -41,182 +79,243 @@ uint32_t lastConfigTry = 0, lastOtaTry = 0;
 bool otaAttempted = false;
 String latestFirmware, otaUrl, firmwareSha256;
 
-float readWaterLevelCm() {
-    float distances[SENSOR_SAMPLES];
-    uint8_t count = 0;
-    uint8_t frame[4] = {};
-    uint8_t frameSize = 0;
-    if (!isfinite(SENSOR_MOUNT_HEIGHT_CM) || SENSOR_MOUNT_HEIGHT_CM <= SENSOR_MIN_DISTANCE_CM ||
-        SENSOR_MOUNT_HEIGHT_CM > SENSOR_MAX_DISTANCE_CM) {
-        Serial.println("Invalid sensor mounting height. Check calibration constants.");
-        return NAN;
+// ===== Pembacaan sensor (cara sederhana, sama seperti kode tes) =====
+uint8_t buf[4];
+int lastJarakMm = -1;
+uint32_t lastJarakMs = 0;
+
+// Membaca satu paket data, mengembalikan jarak dalam mm (-1 jika gagal)
+int bacaJarak()
+{
+  while (sensorSerial.available() >= 4)
+  {
+    if (sensorSerial.read() != 0xFF)
+      continue; // cari header
+
+    buf[0] = 0xFF;
+    buf[1] = sensorSerial.read();
+    buf[2] = sensorSerial.read();
+    buf[3] = sensorSerial.read();
+
+    uint8_t sum = (buf[0] + buf[1] + buf[2]) & 0xFF;
+    if (sum == buf[3])
+    {
+      return (buf[1] << 8) | buf[2];
     }
-    // Drop buffered readings from before HTTP/OTA delays; only use fresh frames.
-    int buffered = sensorSerial.available();
-    while (buffered-- > 0) sensorSerial.read();
-    uint32_t started = millis();
-    uint32_t lastByte = started;
-    while (count < SENSOR_SAMPLES && (uint32_t)(millis() - started) < SENSOR_READ_TIMEOUT_MS) {
-        if ((uint32_t)(millis() - lastByte) > FRAME_GAP_TIMEOUT_MS) frameSize = 0;
-        if (!sensorSerial.available()) {
-            delay(1);
-            continue;
-        }
-        int received = sensorSerial.read();
-        if (received < 0) continue;
-        lastByte = millis();
-        if (frameSize == 0 && received != 0xFF) continue;
-        frame[frameSize++] = static_cast<uint8_t>(received);
-        if (frameSize < 4) continue;
-        uint8_t checksum = static_cast<uint8_t>(frame[0] + frame[1] + frame[2]);
-        if (checksum != frame[3]) {
-            // Slide to a possible next header, including 0xFF inside a damaged frame.
-            uint8_t next = 1;
-            while (next < 4 && frame[next] != 0xFF) next++;
-            frameSize = 4 - next;
-            for (uint8_t index = 0; index < frameSize; index++) frame[index] = frame[next + index];
-            continue;
-        }
-        uint16_t distanceMm = (static_cast<uint16_t>(frame[1]) << 8) | frame[2];
-        frameSize = 0;
-        float distance = distanceMm / 10.0f;
-        // 280 mm may mean the target is anywhere inside the blind zone.
-        if (distance <= SENSOR_MIN_DISTANCE_CM || distance > SENSOR_MAX_DISTANCE_CM) {
-            Serial.printf("UART distance out of usable range: %u mm\n", static_cast<unsigned int>(distanceMm));
-            return NAN;
-        }
-        // Insert in order so isolated distance spikes cannot dominate the median.
-        uint8_t position = count;
-        while (position > 0 && distances[position - 1] > distance) {
-            distances[position] = distances[position - 1];
-            position--;
-        }
-        distances[position] = distance;
-        count++;
-    }
-    if (count < MIN_VALID_SAMPLES) {
-        Serial.println("Not enough fresh UART frames. Check sensor power, TX wiring and baud rate.");
-        return NAN;
-    }
-    float distance = count % 2 == 0
-        ? (distances[count / 2 - 1] + distances[count / 2]) / 2.0f
-        : distances[count / 2];
-    float level = SENSOR_MOUNT_HEIGHT_CM - distance;
-    // Reject impossible calibration results instead of reporting a false zero.
-    if (!isfinite(level) || level < 0) return NAN;
-    Serial.printf("Distance: %.1f cm | Water level: %.1f cm | Valid frames: %u/%u\n",
-        distance, level, static_cast<unsigned int>(count), static_cast<unsigned int>(SENSOR_SAMPLES));
-    return level;
+  }
+  return -1;
 }
 
-void setBuzzer(bool on) {
+// Dipanggil terus di loop: simpan jarak terakhir yang valid
+void pollSensor()
+{
+  int jarak = bacaJarak();
+  // Abaikan bacaan di luar jangkauan sensor (28 cm - 750 cm)
+  if (jarak >= SENSOR_MIN_DISTANCE_CM * 10 && jarak <= SENSOR_MAX_DISTANCE_CM * 10)
+  {
+    lastJarakMm = jarak;
+    lastJarakMs = millis();
+  }
+}
+
+// Ubah jarak terakhir menjadi tinggi air (cm)
+float readWaterLevelCm()
+{
+  pollSensor();
+  if (lastJarakMm <= 0 || (uint32_t)(millis() - lastJarakMs) > SENSOR_STALE_MS)
+  {
+    Serial.println("Sensor belum mengirim data baru.");
+    return NAN;
+  }
+
+  float distance = lastJarakMm / 10.0f;
+  float tinggi = SENSOR_MOUNT_HEIGHT_CM - distance;
+  if (tinggi < 0)
+    tinggi = 0;
+  Serial.printf("Jarak: %.1f cm | Tinggi air: %.1f cm\n", distance, tinggi);
+  return tinggi;
+}
+
+void setBuzzer(bool on)
+{
   digitalWrite(BUZZER_PIN, (on == BUZZER_ACTIVE_HIGH) ? HIGH : LOW);
 }
-void evaluateBuzzer() {
-  setBuzzer(hasConfig && sensorValid && buzzerEnabled && latestWaterLevel > alarmThreshold);
+
+void evaluateBuzzer()
+{
+  // Buzzer hanya boleh bunyi saat internet tersambung
+  bool online = WiFi.status() == WL_CONNECTED;
+  setBuzzer(online && hasConfig && sensorValid && buzzerEnabled && latestWaterLevel > alarmThreshold);
 }
 
-bool isNewerVersion(String remote, String local) {
+bool isNewerVersion(String remote, String local)
+{
   unsigned long r[3], l[3];
   if (sscanf(remote.c_str(), "v%lu.%lu.%lu", &r[0], &r[1], &r[2]) != 3 ||
-      sscanf(local.c_str(), "v%lu.%lu.%lu", &l[0], &l[1], &l[2]) != 3) return false;
-  for (int i=0; i<3; i++) {
-    if (r[i] > l[i]) return true;
-    if (r[i] < l[i]) return false;
+      sscanf(local.c_str(), "v%lu.%lu.%lu", &l[0], &l[1], &l[2]) != 3)
+    return false;
+  for (int i = 0; i < 3; i++)
+  {
+    if (r[i] > l[i])
+      return true;
+    if (r[i] < l[i])
+      return false;
   }
   return false;
 }
 
-bool applyConfig(const String& body) {
+// ===== Simpan / muat config di memori flash (tetap ada saat offline & setelah sleep) =====
+Preferences prefs;
+
+void saveConfig()
+{
+  prefs.begin("water", false);
+  if (prefs.getFloat("thr", NAN) != alarmThreshold)
+    prefs.putFloat("thr", alarmThreshold);
+  if (prefs.getBool("buz", !buzzerEnabled) != buzzerEnabled)
+    prefs.putBool("buz", buzzerEnabled);
+  if (prefs.getUInt("int", 0) != sendIntervalMs / 1000)
+    prefs.putUInt("int", sendIntervalMs / 1000);
+  prefs.end();
+}
+
+void loadConfig()
+{
+  prefs.begin("water", true);
+  alarmThreshold = prefs.getFloat("thr", DEFAULT_ALARM_THRESHOLD);
+  buzzerEnabled = prefs.getBool("buz", DEFAULT_BUZZER_ENABLED);
+  sendIntervalMs = prefs.getUInt("int", DEFAULT_INTERVAL_S) * 1000UL;
+  prefs.end();
+  hasConfig = true; // pakai setting tersimpan / manual, jadi buzzer tetap jalan offline
+  Serial.printf("Config lokal: threshold %.1f cm, buzzer %s, interval %lu s\n",
+                alarmThreshold, buzzerEnabled ? "ON" : "OFF", (unsigned long)(sendIntervalMs / 1000));
+}
+
+bool applyConfig(const String &body)
+{
   JsonDocument doc;
-  if (deserializeJson(doc, body) || doc["status"].as<String>() != "success") return false;
-  if (!doc["alarm_threshold"].is<double>() || !doc["buzzer_status"].is<int>() || !doc["update_interval"].is<uint32_t>()) return false;
+  if (deserializeJson(doc, body) || doc["status"].as<String>() != "success")
+    return false;
+  if (!doc["alarm_threshold"].is<double>() || !doc["buzzer_status"].is<int>() ||
+      !doc["update_interval"].is<uint32_t>())
+    return false;
+
   uint32_t seconds = doc["update_interval"].as<uint32_t>();
   int enabled = doc["buzzer_status"].as<int>();
   float threshold = doc["alarm_threshold"].as<float>();
-  if (seconds < 1 || seconds > 86399 || !isfinite(threshold) || (enabled != 0 && enabled != 1)) return false;
+  if (seconds < 1 || seconds > 86399 || !isfinite(threshold) || (enabled != 0 && enabled != 1))
+    return false;
+
   alarmThreshold = threshold;
-  buzzerEnabled = enabled == 1;
+  buzzerEnabled = (enabled == 1);
   sendIntervalMs = seconds * 1000UL;
   hasConfig = true;
-  latestFirmware = doc["latest_firmware"].is<const char*>() ? doc["latest_firmware"].as<String>() : "";
-  otaUrl = doc["ota_url"].is<const char*>() ? doc["ota_url"].as<String>() : "";
-  firmwareSha256 = doc["firmware_sha256"].is<const char*>() ? doc["firmware_sha256"].as<String>() : "";
-  evaluateBuzzer(); // A disabled flag turns the buzzer off immediately.
+  latestFirmware = doc["latest_firmware"].is<const char *>() ? doc["latest_firmware"].as<String>() : "";
+  otaUrl = doc["ota_url"].is<const char *>() ? doc["ota_url"].as<String>() : "";
+  firmwareSha256 = doc["firmware_sha256"].is<const char *>() ? doc["firmware_sha256"].as<String>() : "";
+  saveConfig();
+  evaluateBuzzer();
   return true;
 }
 
-bool fetchConfig() {
+bool fetchConfig()
+{
   WiFiClient client;
   HTTPClient http;
-  if (!http.begin(client, SERVER_URL + "/api/device-config.php?device_id=" + DEVICE_ID)) return false;
+  if (!http.begin(client, SERVER_URL + "/api/device-config.php?device_id=" + DEVICE_ID))
+    return false;
   http.setTimeout(10000);
   int status = http.GET();
-  bool ok = status == 200 && applyConfig(http.getString());
-  if (!ok) Serial.printf("Config failed: HTTP %d\n", status);
+  bool ok = (status == 200) && applyConfig(http.getString());
+  if (!ok)
+    Serial.printf("Config failed: HTTP %d\n", status);
   http.end();
   return ok;
 }
 
-void sendTelemetry() {
+void sendTelemetry()
+{
   WiFiClient client;
   HTTPClient http;
-  if (!http.begin(client, SERVER_URL + "/api/telemetry.php")) return;
+  if (!http.begin(client, SERVER_URL + "/api/telemetry.php"))
+    return;
   http.setTimeout(10000);
   http.addHeader("Content-Type", "application/json");
+
   JsonDocument doc;
   doc["device_id"] = DEVICE_ID;
   doc["water_level"] = latestWaterLevel;
+  doc["measurement_type"] = "water_height";
   doc["device_status"] = 1;
   doc["firmware_version"] = FIRMWARE_VERSION;
   String body;
   serializeJson(doc, body);
+
   int status = http.POST(body);
-  bool ok = status == 200 && applyConfig(http.getString());
+  bool ok = (status == 200) && applyConfig(http.getString());
   Serial.printf("Telemetry: HTTP %d, config %s\n", status, ok ? "OK" : "failed");
   http.end();
 }
 
-void tryOta() {
-  if (!hasConfig || !isNewerVersion(latestFirmware, FIRMWARE_VERSION) || firmwareSha256.length() != 64) return;
-  // Only download from this configured server. This example uses HTTP on a LAN.
-  if (!otaUrl.startsWith(SERVER_URL + "/api/firmware-download.php?id=")) return;
-  if (otaAttempted && (uint32_t)(millis() - lastOtaTry) < OTA_RETRY_MS) return;
+void tryOta()
+{
+  if (!hasConfig || !isNewerVersion(latestFirmware, FIRMWARE_VERSION) || firmwareSha256.length() != 64)
+    return;
+  if (!otaUrl.startsWith(SERVER_URL + "/api/firmware-download.php?id="))
+    return;
+  if (otaAttempted && (uint32_t)(millis() - lastOtaTry) < OTA_RETRY_MS)
+    return;
   otaAttempted = true;
   lastOtaTry = millis();
+
   WiFiClient client;
   HTTPClient http;
-  if (!http.begin(client, otaUrl)) return;
+  if (!http.begin(client, otaUrl))
+    return;
   http.setTimeout(15000);
   int status = http.GET();
   int length = http.getSize();
-  if (status != 200 || length <= 0 || !Update.begin((size_t)length, U_FLASH)) {
+  if (status != 200 || length <= 0 || !Update.begin((size_t)length, U_FLASH))
+  {
     Serial.printf("OTA could not start: HTTP %d, size %d\n", status, length);
     http.end();
     return;
   }
+
   mbedtls_sha256_context sha;
   mbedtls_sha256_init(&sha);
-  bool ok = mbedtls_sha256_starts(&sha, 0) == 0;
+  bool ok = SHA_STARTS(&sha) == 0;
   uint8_t buffer[1024];
   int remaining = length;
   uint32_t lastData = millis();
-  WiFiClient* stream = http.getStreamPtr();
-  while (ok && remaining > 0) {
+  WiFiClient *stream = http.getStreamPtr();
+
+  while (ok && remaining > 0)
+  {
     int available = stream->available();
-    if (available > 0) {
+    if (available > 0)
+    {
       size_t wanted = min((size_t)remaining, min((size_t)available, sizeof(buffer)));
       int received = stream->read(buffer, wanted);
-      if (received <= 0) { ok = false; break; }
-      ok = mbedtls_sha256_update(&sha, buffer, received) == 0;
-      if (ok) ok = Update.write(buffer, received) == (size_t)received;
+      if (received <= 0)
+      {
+        ok = false;
+        break;
+      }
+      ok = SHA_UPDATE(&sha, buffer, received) == 0;
+      if (ok)
+        ok = Update.write(buffer, received) == (size_t)received;
       remaining -= received;
       lastData = millis();
-    } else if (!http.connected() || (uint32_t)(millis() - lastData) > 15000) {
+    }
+    else if (!http.connected() || (uint32_t)(millis() - lastData) > 15000)
+    {
       ok = false;
     }
-    // Continue sensor/buzzer checks while a firmware download is in progress.
-    if ((uint32_t)(millis() - lastSample) >= SENSOR_INTERVAL_MS) {
+    // Sensor & buzzer tetap dicek selama download
+    pollSensor();
+    if ((uint32_t)(millis() - lastSample) >= SENSOR_INTERVAL_MS)
+    {
       lastSample = millis();
       latestWaterLevel = readWaterLevelCm();
       sensorValid = isfinite(latestWaterLevel);
@@ -224,62 +323,161 @@ void tryOta() {
     }
     delay(1);
   }
+
   unsigned char digest[32];
-  if (ok) ok = mbedtls_sha256_finish(&sha, digest) == 0;
+  if (ok)
+    ok = SHA_FINISH(&sha, digest) == 0;
   mbedtls_sha256_free(&sha);
-  String checksum;
-  if (ok) {
+
+  if (ok)
+  {
+    String checksum;
     char hex[3];
-    for (int i=0; i<32; i++) { snprintf(hex, sizeof(hex), "%02x", digest[i]); checksum += hex; }
+    for (int i = 0; i < 32; i++)
+    {
+      snprintf(hex, sizeof(hex), "%02x", digest[i]);
+      checksum += hex;
+    }
     ok = checksum.equalsIgnoreCase(firmwareSha256);
   }
-  if (ok && remaining == 0) ok = Update.end() && Update.isFinished();
-  else ok = false;
-  if (!ok) Update.abort();
+  if (ok && remaining == 0)
+    ok = Update.end() && Update.isFinished();
+  else
+    ok = false;
+  if (!ok)
+    Update.abort();
   http.end();
-  if (ok) {
+
+  if (ok)
+  {
     Serial.println("OTA verified and flashed. Rebooting...");
     setBuzzer(false);
     delay(500);
     ESP.restart();
-  } else Serial.println("OTA failed; current firmware stays active. Retry in 5 minutes.");
+  }
+  else
+  {
+    Serial.println("OTA failed; current firmware stays active. Retry in 5 minutes.");
+  }
 }
 
-void setup() {
+// ===== Deep sleep =====
+bool telemetryDone = false;
+uint32_t bootMs = 0;
+
+void goToSleep()
+{
+  uint32_t sleepS = sendIntervalMs / 1000;
+  Serial.printf("Sleep %lu detik...\n", (unsigned long)sleepS);
+  Serial.flush();
+  setBuzzer(false);
+  gpio_hold_en((gpio_num_t)BUZZER_PIN); // kunci buzzer tetap mati saat sleep
+  if (SENSOR_POWER_CONTROL)
+  {
+    digitalWrite(SENSOR_POWER_PIN, SENSOR_POWER_ACTIVE_HIGH ? LOW : HIGH); // sensor OFF
+    gpio_hold_en((gpio_num_t)SENSOR_POWER_PIN);
+  }
+  gpio_deep_sleep_hold_en();
+  // WiFi otomatis mati saat deep sleep, tidak perlu WiFi.mode(WIFI_OFF)
+  esp_sleep_enable_timer_wakeup((uint64_t)sleepS * 1000000ULL);
+  esp_deep_sleep_start();
+}
+
+void setup()
+{
   Serial.begin(115200);
-    sensorSerial.begin(SENSOR_BAUD, SERIAL_8N1, SENSOR_RX_PIN, SENSOR_TX_PIN);
+  bootMs = millis();
+  gpio_hold_dis((gpio_num_t)BUZZER_PIN); // lepas kunci pin setelah bangun
   pinMode(BUZZER_PIN, OUTPUT);
   setBuzzer(false);
+
+  if (SENSOR_POWER_CONTROL)
+  {
+    gpio_hold_dis((gpio_num_t)SENSOR_POWER_PIN);
+    pinMode(SENSOR_POWER_PIN, OUTPUT);
+    digitalWrite(SENSOR_POWER_PIN, SENSOR_POWER_ACTIVE_HIGH ? HIGH : LOW); // sensor ON
+  }
+
+  sensorSerial.setRxBufferSize(1024);
+  sensorSerial.begin(SENSOR_BAUD, SERIAL_8N1, SENSOR_RX_PIN, SENSOR_TX_PIN);
+
+  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TIMER)
+    Serial.println("Bangun dari sleep");
+  Serial.println("Water Level Monitor start, server: " + SERVER_URL);
+  loadConfig();
+
   WiFi.mode(WIFI_STA);
+  WiFi.setSleep(true); // modem sleep saat WiFi menyala
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  lastSample = millis() - SENSOR_INTERVAL_MS;
+
+  // Bacaan pertama setelah sensor siap
+  lastSample = millis() - SENSOR_INTERVAL_MS + SENSOR_WARMUP_MS;
   lastSend = millis() - sendIntervalMs;
   lastConfigTry = millis() - 10000;
 }
 
-void loop() {
+void loop()
+{
+  pollSensor(); // baca sensor terus, dengan atau tanpa internet
   uint32_t t = millis();
-  if ((uint32_t)(t-lastSample) >= SENSOR_INTERVAL_MS) {
-    lastSample=t;
-    latestWaterLevel=readWaterLevelCm();
-    sensorValid=isfinite(latestWaterLevel);
-    if (!sensorValid) Serial.println("Invalid ultrasonic reading. Check wiring, range and mounting height; telemetry skipped.");
+
+  // 1. Sensor & buzzer: selalu jalan, tidak tergantung WiFi
+  if ((uint32_t)(t - lastSample) >= SENSOR_INTERVAL_MS)
+  {
+    lastSample = t;
+    latestWaterLevel = readWaterLevelCm();
+    sensorValid = isfinite(latestWaterLevel);
+    if (!sensorValid)
+      Serial.println("Pembacaan tidak valid, telemetry dilewati.");
     evaluateBuzzer();
   }
-  if (WiFi.status() != WL_CONNECTED) {
-    if ((uint32_t)(t-lastWifiTry) >= 10000) { lastWifiTry=t; WiFi.reconnect(); }
-    delay(5);
-    return;
+
+  bool online = WiFi.status() == WL_CONNECTED;
+
+  // 2. Bagian online: kirim data, ambil config, OTA
+  if (online)
+  {
+    if (!sensorValid && (uint32_t)(t - lastConfigTry) >= 10000)
+    {
+      lastConfigTry = t;
+      fetchConfig();
+    }
+    if (sensorValid && (uint32_t)(millis() - lastSend) >= sendIntervalMs)
+    {
+      lastSend = millis();
+      sendTelemetry();
+      telemetryDone = true;
+    }
+    tryOta();
   }
-  // Also poll config at the send interval when the sensor is invalid so admin can disable buzzer.
-  if (!hasConfig || !sensorValid) {
-    uint32_t poll = hasConfig ? sendIntervalMs : 10000;
-    if ((uint32_t)(t-lastConfigTry) >= poll) { lastConfigTry=t; fetchConfig(); }
+  else
+  {
+    setBuzzer(false); // internet putus: buzzer langsung mati
   }
-  if (sensorValid && (uint32_t)(millis()-lastSend) >= sendIntervalMs) {
-    lastSend=millis();
-    sendTelemetry();
+  if (!online && (uint32_t)(t - lastWifiTry) >= 10000)
+  {
+    lastWifiTry = t;
+    Serial.println("WiFi offline: buzzer OFF, sensor tetap membaca");
+    WiFi.reconnect();
   }
-  tryOta();
+
+  // 3. Mode sleep
+  if (SLEEP_ENABLED)
+  {
+    uint32_t awake = millis() - bootMs;
+    bool alarmOn = online && buzzerEnabled && sensorValid && latestWaterLevel > alarmThreshold;
+    bool selesai = telemetryDone                                          // data sudah terkirim
+                   || (!online && awake > WIFI_TIMEOUT_MS && sensorValid) // offline, sudah baca sensor
+                   || awake > MAX_AWAKE_MS;                               // pengaman
+    if (alarmOn)
+    {
+      // Jangan tidur saat alarm aktif: buzzer tetap bunyi sampai kondisi aman
+    }
+    else if (selesai)
+    {
+      goToSleep();
+    }
+  }
+
   delay(5);
 }

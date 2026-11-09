@@ -91,7 +91,7 @@ pageTitle('PENGATURAN PERANGKAT', $id ? 'Ubah perangkat' : 'Tambah perangkat', '
                         <small class="form-text text-muted" id="interval-help">Sensor dibaca setiap 5 detik. Data dikirim sesuai interval ini, minimal 1 detik.</small>
                     </fieldset>
                     <div class="form-group">
-                        <label for="alarm-threshold">Ambang alarm (cm)</label>
+                        <label for="alarm-threshold">Ambang tinggi air untuk alarm (cm)</label>
                         <input class="form-control" id="alarm-threshold" type="number" step="any" name="alarm_threshold" required value="<?= h($values['alarm_threshold'] ?? '') ?>" placeholder="Contoh: 20">
                     </div>
                     <div class="form-check">

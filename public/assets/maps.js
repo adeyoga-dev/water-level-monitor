@@ -120,7 +120,7 @@
     reading.textContent =
       device.level === null
         ? "Belum ada pembacaan"
-        : `${device.level.toFixed(1)} cm `;
+        : `Tinggi air: ${device.level.toFixed(1)} cm `;
     if (device.level !== null) {
       const alertBadge = document.createElement("span");
       const alertColor = {

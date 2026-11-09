@@ -147,6 +147,8 @@ function telemetry(array $input): array
     $identifier = $input['device_id'] ?? null;
     if (!is_string($identifier) || !preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $identifier)) fail('Invalid device_id.');
     $level = finiteNumber($input['water_level'] ?? null, 'water_level');
+    if (isset($input['measurement_type']) && $input['measurement_type'] !== 'water_height') fail('water_level must represent water height, not sensor distance.');
+    if ($level < 0) fail('Water height must be non-negative.');
     if (!isset($input['device_status']) || !in_array($input['device_status'], [0, 1], true)) fail('device_status must be the integer 0 or 1.');
     $version = array_key_exists('firmware_version', $input) ? validVersion($input['firmware_version']) : null;
     db()->beginTransaction();
@@ -155,7 +157,7 @@ function telemetry(array $input): array
         if (!$device) throw new OutOfBoundsException('Device is not registered.');
         $ranges = query('SELECT * FROM device_alert_ranges WHERE device_id=? ORDER BY alarm_status', [$device['id']])->fetchAll();
         $time = now();
-        query('UPDATE devices SET water_level=?, device_status=?, reported_firmware=COALESCE(?,reported_firmware),last_seen_at=?,updated_at=? WHERE id=?', [$level, $input['device_status'], $version, $time, $time, $device['id']]);
+        query('UPDATE devices SET water_level=?,device_status=?,reported_firmware=COALESCE(?,reported_firmware),last_seen_at=?,updated_at=? WHERE id=?', [$level, $input['device_status'], $version, $time, $time, $device['id']]);
         query('INSERT INTO sensor_logs(device_id,water_level,alarm_status,created_at) VALUES(?,?,?,?)', [$identifier, $level, classify($level, $ranges), $time]);
         $response = deviceConfig($device);
         db()->commit();
