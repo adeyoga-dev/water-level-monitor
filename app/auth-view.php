@@ -8,6 +8,9 @@
     <title><?= h($title) ?> · SIPATA</title>
     <link rel="icon" href="/assets/images/flow-mark-blue.svg">
     <link rel="stylesheet" href="/assets/vendor/bootstrap-4.6.2-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/vendor/fontawesome-free-6.7.2/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/assets/vendor/fontawesome-free-6.7.2/css/solid.min.css">
+    <script src="/assets/button-icons.js" defer></script>
     <link rel="stylesheet" href="/assets/css/design-tokens.css">
     <link rel="stylesheet" href="/assets/css/theme.css">
 </head>

@@ -1,5 +1,8 @@
 .env
 vendor/
+!public/assets/vendor/
+public/assets/vendor/*
+!public/assets/vendor/fontawesome-free-6.7.2/
 storage/firmware/*
 !storage/firmware/.gitkeep
 storage/logs/*

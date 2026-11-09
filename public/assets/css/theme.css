@@ -567,6 +567,10 @@ legend {
   z-index: 0;
   font-family: var(--font-sans);
 }
+.flow-button-icon {
+  margin-right: var(--space-2);
+  pointer-events: none;
+}
 .flow-map-actions {
   gap: var(--space-2);
 }

@@ -18,6 +18,9 @@ function pageStart(string $title, string $active, bool $viewer = false): void
         <title><?= h($title) ?> · SIPATA</title>
         <link rel="icon" type="image/svg+xml" sizes="any" href="/assets/images/flow-mark-blue.svg">
         <link rel="stylesheet" href="/assets/vendor/bootstrap-4.6.2-dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/assets/vendor/fontawesome-free-6.7.2/css/fontawesome.min.css">
+        <link rel="stylesheet" href="/assets/vendor/fontawesome-free-6.7.2/css/solid.min.css">
+        <script src="/assets/button-icons.js" defer></script>
         <?php if ($active === 'maps'): ?>
             <link rel="stylesheet" href="/assets/vendor/leaflet-1.9.4/leaflet.css"><?php endif ?>
         <link rel="stylesheet" href="/assets/css/design-tokens.css">

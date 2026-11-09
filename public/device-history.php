@@ -48,7 +48,7 @@ pageStart('Riwayat perangkat', 'dashboard');
                             <input class="form-control form-control-sm" id="history-to" name="to" type="date" min="1000-01-01" max="9999-12-30" value="<?= h($history['filters']['to']) ?>" required>
                         </div>
                         <div class="form-group col-12 col-md-4">
-                            <label class="small" for="history-group">Kelompokkan berdasarkan</label>
+                            <label class="small" for="history-group">Kelompokkan</label>
                             <select class="form-control form-control-sm" id="history-group" name="group_by">
                                 <?php foreach (['auto' => 'Otomatis', 'minute' => 'Menit', 'hour' => 'Jam', 'day' => 'Hari', 'month' => 'Bulan', 'year' => 'Tahun'] as $value => $label): ?>
                                     <option value="<?= $value ?>" <?= $history['filters']['group_by'] === $value ? 'selected' : '' ?>><?= $label ?></option>
