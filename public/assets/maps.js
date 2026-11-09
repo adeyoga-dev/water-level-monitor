@@ -3,12 +3,11 @@
   const status = document.querySelector("#map-status");
   const error = document.querySelector("#map-error");
   const reset = document.querySelector("#map-indonesia");
-  const focusButtons = [...document.querySelectorAll("[data-map-device]")];
   if (typeof L === "undefined") {
     container.setAttribute("aria-busy", "false");
     status.textContent = "Peta tidak tersedia";
     error.textContent =
-      "Pustaka peta gagal dimuat. Muat ulang halaman untuk mencoba lagi. Lokasi perangkat tetap tercantum di bawah.";
+      "Pustaka peta gagal dimuat. Muat ulang halaman untuk mencoba lagi.";
     error.hidden = false;
     return;
   }
@@ -50,6 +49,17 @@
     }, parseFloat(tokens.getPropertyValue("--map-hover-delay")));
   }
   let overview = true;
+  function focusMarker(marker) {
+    overview = false;
+    container.scrollIntoView({
+      behavior: reducedMotion.matches ? "auto" : "smooth",
+      block: "center",
+    });
+    map.setView(marker.getLatLng(), 14, { animate: false });
+    closePopups();
+    marker.openPopup();
+    marker.getElement()?.focus({ preventScroll: true });
+  }
   let tileErrors = 0;
   let tileTimer;
   function showIndonesia() {
@@ -77,7 +87,7 @@
       container.setAttribute("aria-busy", "false");
       status.textContent = "Gambar peta membutuhkan waktu lebih lama dari biasanya";
       error.textContent =
-        "Periksa koneksi internet atau muat ulang halaman. Penanda dan daftar perangkat tetap tersedia.";
+        "Periksa koneksi internet atau muat ulang halaman. Penanda tetap tersedia.";
       error.hidden = false;
     }, 15000);
   });
@@ -93,7 +103,7 @@
     error.hidden = tileErrors === 0;
     if (tileErrors)
       error.textContent =
-        "Sebagian gambar peta tidak tersedia. Periksa koneksi atau muat ulang halaman. Penanda dan daftar perangkat tetap tersedia.";
+        "Sebagian gambar peta tidak tersedia. Periksa koneksi atau muat ulang halaman. Penanda tetap tersedia.";
   });
   tiles.addTo(map);
   for (const device of devices) {
@@ -132,10 +142,11 @@
     edit.className = "btn btn-outline-secondary";
     edit.href = `/device-edit.php?id=${encodeURIComponent(device.id)}`;
     edit.textContent = "Ubah lokasi";
-    const view = document.createElement("a");
+    const view = document.createElement("button");
+    view.type = "button";
     view.className = "btn btn-primary";
-    view.href = container.dataset.viewer === "true" ? "/viewer.php" : "/";
     view.textContent = "Lihat";
+    view.addEventListener("click", () => focusMarker(marker));
     const zoomOut = document.createElement("button");
     zoomOut.type = "button";
     zoomOut.className = "btn btn-primary";
@@ -210,22 +221,6 @@
     closePopups();
     showIndonesia();
   });
-  for (const button of focusButtons) {
-    const marker = markers.get(button.dataset.mapDevice);
-    if (!marker) continue;
-    button.disabled = false;
-    button.addEventListener("click", () => {
-      overview = false;
-      container.scrollIntoView({
-        behavior: reducedMotion.matches ? "auto" : "smooth",
-        block: "center",
-      });
-      map.setView(marker.getLatLng(), 14, { animate: false });
-      closePopups();
-      marker.openPopup();
-      marker.getElement()?.focus({ preventScroll: true });
-    });
-  }
   window.addEventListener("pagehide", () => {
     clearTimeout(hoverTimer);
     clearTimeout(tileTimer);

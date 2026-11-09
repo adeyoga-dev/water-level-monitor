@@ -41,43 +41,8 @@ pageStart('Peta', 'maps', $viewer);
         <?php if (!$mapDevices): ?><p class="text-muted">Belum ada lokasi perangkat.<?php if (!$viewer): ?> Tambahkan koordinat di <a href="/devices.php">Perangkat</a> untuk menempatkan penanda pertama.<?php endif ?></p><?php endif ?>
         <div id="devices-map" data-viewer="<?= $viewer ? 'true' : 'false' ?>" class="flow-map" role="region" aria-label="Peta lokasi perangkat" aria-busy="true"></div>
         <noscript>
-            <p class="text-muted">Aktifkan JavaScript untuk melihat peta interaktif. Lokasi perangkat tetap tersedia pada tabel di bawah.</p>
+            <p class="text-muted">Aktifkan JavaScript untuk melihat peta interaktif dan informasi pos pantau.</p>
         </noscript>
-    </div>
-</section>
-<section class="card" aria-labelledby="map-device-list-title">
-    <div class="card-header">
-        <h2 class="h5 mb-0" id="map-device-list-title">Perangkat</h2>
-    </div>
-    <div class="table-responsive" tabindex="0" role="region" aria-label="Daftar lokasi perangkat">
-        <table class="table table-hover mb-0">
-            <thead>
-                <tr>
-                    <th scope="col">Pos Pantau</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Koordinat</th>
-                    <th scope="col">Tindakan</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($devices as $device): ?>
-                    <tr>
-                        <td><strong><?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></strong></td>
-                        <td><span class="badge badge-<?= ($viewer || $device['device_status']) ? 'success' : 'danger' ?>"><?= ($viewer || $device['device_status']) ? 'Terhubung' : 'Terputus' ?></span></td>
-                        <td class="text-nowrap"><?php if (($device['latitude'] ?? null) !== null && ($device['longitude'] ?? null) !== null): ?><?= h($device['latitude']) ?>, <?= h($device['longitude']) ?><?php else: ?><span class="text-muted">Belum diatur</span><?php endif ?></td>
-                        <td>
-                            <div class="d-flex flex-wrap flow-map-actions">
-                                <?php if (($device['latitude'] ?? null) !== null && ($device['longitude'] ?? null) !== null): ?><button class="btn btn-outline-secondary" type="button" data-map-device="<?= (int) $device['id'] ?>" disabled>Tampilkan di peta<span class="sr-only"> <?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></span></button><?php endif ?>
-                                <?php if (!$viewer): ?><a class="btn btn-outline-secondary" href="/device-edit.php?id=<?= (int) $device['id'] ?>">Ubah lokasi<span class="sr-only"> <?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></span></a><?php endif ?>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endforeach ?>
-                <?php if (!$devices): ?><tr>
-                        <td colspan="4" class="text-center text-muted py-5">Belum ada perangkat.<?php if (!$viewer): ?> <a href="/device-edit.php">Add a device</a> untuk memulai.<?php endif ?></td>
-                    </tr><?php endif ?>
-            </tbody>
-        </table>
     </div>
 </section>
 <script id="map-data" type="application/json">
