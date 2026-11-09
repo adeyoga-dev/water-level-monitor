@@ -12,6 +12,7 @@ foreach ($devices as $device) {
     $mapDevices[] = [
         'id' => (int) $device['id'],
         'device_id' => $device['device_id'],
+        'station_name' => $device['station_name'] ?? 'Pos pantau belum dinamai',
         'latitude' => (float) $device['latitude'],
         'longitude' => (float) $device['longitude'],
         'online' => $viewer || (bool) $device['device_status'],
@@ -26,7 +27,7 @@ pageStart('Peta', 'maps', $viewer);
 <section class="card mb-4" aria-labelledby="maps-title">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
         <div>
-            <h2 class="h5 mb-1" id="maps-title">Lokasi perangkat</h2>
+            <h2 class="h5 mb-1" id="maps-title">Sebaran Pos Pantau</h2>
             <span class="small text-muted"><?= count($mapDevices) ?> terpetakan · <?= count($devices) - count($mapDevices) ?> tanpa koordinat</span>
         </div>
         <div class="d-flex flex-wrap flow-map-actions">
@@ -52,7 +53,7 @@ pageStart('Peta', 'maps', $viewer);
         <table class="table table-hover mb-0">
             <thead>
                 <tr>
-                    <th scope="col">Perangkat</th>
+                    <th scope="col">Pos Pantau</th>
                     <th scope="col">Status</th>
                     <th scope="col">Koordinat</th>
                     <th scope="col">Tindakan</th>
@@ -61,13 +62,13 @@ pageStart('Peta', 'maps', $viewer);
             <tbody>
                 <?php foreach ($devices as $device): ?>
                     <tr>
-                        <td><strong><?= h($device['device_id']) ?></strong></td>
+                        <td><strong><?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></strong></td>
                         <td><span class="badge badge-<?= ($viewer || $device['device_status']) ? 'success' : 'secondary' ?>"><?= ($viewer || $device['device_status']) ? 'Terhubung' : 'Terputus' ?></span></td>
                         <td class="text-nowrap"><?php if (($device['latitude'] ?? null) !== null && ($device['longitude'] ?? null) !== null): ?><?= h($device['latitude']) ?>, <?= h($device['longitude']) ?><?php else: ?><span class="text-muted">Belum diatur</span><?php endif ?></td>
                         <td>
                             <div class="d-flex flex-wrap flow-map-actions">
-                                <?php if (($device['latitude'] ?? null) !== null && ($device['longitude'] ?? null) !== null): ?><button class="btn btn-outline-secondary" type="button" data-map-device="<?= (int) $device['id'] ?>" disabled>Tampilkan di peta<span class="sr-only"> <?= h($device['device_id']) ?></span></button><?php endif ?>
-                                <?php if (!$viewer): ?><a class="btn btn-outline-secondary" href="/device-edit.php?id=<?= (int) $device['id'] ?>">Ubah lokasi<span class="sr-only"> <?= h($device['device_id']) ?></span></a><?php endif ?>
+                                <?php if (($device['latitude'] ?? null) !== null && ($device['longitude'] ?? null) !== null): ?><button class="btn btn-outline-secondary" type="button" data-map-device="<?= (int) $device['id'] ?>" disabled>Tampilkan di peta<span class="sr-only"> <?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></span></button><?php endif ?>
+                                <?php if (!$viewer): ?><a class="btn btn-outline-secondary" href="/device-edit.php?id=<?= (int) $device['id'] ?>">Ubah lokasi<span class="sr-only"> <?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></span></a><?php endif ?>
                             </div>
                         </td>
                     </tr>

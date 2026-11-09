@@ -84,7 +84,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                     <footer class="flow-footer border-top px-3 px-lg-4 py-3 d-flex flex-wrap justify-content-between small text-muted">
                         <span class="flow-footer-brand">
                             <img class="flow-brand-mark" src="/assets/images/flow-mark-blue.svg" width="24" height="24" alt="" aria-hidden="true">
-                            <span><strong>Flow</strong> · Sistem Pemantauan Tinggi Air</span>
+                            <span><strong>SIPATA</strong> · Sistem Pemantauan Tinggi Air</span>
                         </span>
                     </footer>
                 </div>
@@ -114,7 +114,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
         <table class="table table-striped table-hover mb-0">
             <thead class="thead-light text-nowrap">
                 <tr>
-                    <th scope="col">Perangkat</th>
+                    <th scope="col">Pos Pantau</th>
                     <th scope="col">Status</th>
                     <th scope="col">Tinggi air</th>
                     <th scope="col">Status siaga</th>
@@ -128,7 +128,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
             <tbody id="device-rows">
                 <?php foreach ($devices as $device): ?>
                     <tr>
-                        <td class="text-nowrap"><strong><?= h($device['device_id']) ?></strong><small class="d-block text-muted">#<?= h($device['id']) ?></small></td>
+                        <td class="text-nowrap"><strong><?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></strong><small class="d-block text-muted">ID: <?= h($device['device_id']) ?></small></td>
                         <td><span class="badge badge-<?= $device['device_status'] ? 'success' : 'secondary' ?>"><?= $device['device_status'] ? 'Terhubung' : 'Terputus' ?></span></td>
                         <td class="text-nowrap"><strong><?= $device['water_level'] === null ? '—' : h(number_format((float)$device['water_level'], 2)) ?></strong> <span class="text-muted">cm</span></td>
                         <td><span class="badge badge-<?= [0 => 'success', 1 => 'warning', 2 => 'danger'][$device['alert_status'] ?? -1] ?? 'secondary' ?>"><?= h($device['water_level'] === null ? 'Belum ada pembacaan' : uiText(alertLabel($device['alert_status']))) ?></span></td>
@@ -224,7 +224,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
             <article class="flow-device-card card h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-start">
                     <div class="mr-3 text-break">
-                        <h2 class="h4 mb-1">Sistem Pemantauan Tinggi Air</h2>
+                        <h2 class="h4 mb-1"><?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></h2>
                         <p class="flow-device-id text-muted mb-0"><?= h($device['device_id']) ?></p>
                     </div>
                     <span class="badge badge-<?= ($viewer || $device['device_status']) ? 'success' : 'secondary' ?>"><?= ($viewer || $device['device_status']) ? 'Terhubung' : 'Terputus' ?></span>
@@ -245,7 +245,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                     <?php foreach (count($devices) === 1 && !$detailView ? [1000 => 'd-none d-md-block', 420 => 'd-md-none'] : [420 => 'd-block'] as $width => $visibility): ?>
                         <?php $graphicId = 'water-level-' . (int) $device['id'] . '-' . $width; ?>
                         <svg class="flow-water-chart w-100 <?= $visibility ?> border rounded" viewBox="0 0 <?= $width ?> 300" role="img" aria-labelledby="<?= $graphicId ?>-title <?= $graphicId ?>-description">
-                            <title id="<?= $graphicId ?>-title">Tinggi air · <?= h($device['device_id']) ?></title>
+                            <title id="<?= $graphicId ?>-title">Tinggi air · <?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></title>
                             <desc id="<?= $graphicId ?>-description"><?= $level === null ? 'Belum ada pembacaan sensor.' : h(number_format($level, 1)) . ' cm.' ?> Rentang dan batas siaga mengikuti pengaturan perangkat. Skala menyesuaikan secara otomatis.</desc>
                             <defs>
                                 <linearGradient id="<?= $graphicId ?>-fill" x1="0" y1="0" x2="0" y2="1">

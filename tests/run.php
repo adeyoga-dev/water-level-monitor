@@ -8,6 +8,9 @@ function check(bool $condition,string $message): void { global $checks; if(!$con
 function invalid(callable $fn): bool { try{$fn();return false;}catch(InvalidArgumentException){return true;} }
 
 $env=parseEnv("# comment\nDB_HOST = localhost\nDB_PASSWORD=\" space#pass=word \"\nEMPTY=\nSINGLE='a=b#c'\n");
+foreach (['', '   ', [], str_repeat('a', 151), "Pos\nPantau"] as $name) {
+    check(invalid(fn()=>saveDevice(['station_name'=>$name])), 'invalid station name rejected before database access');
+}
 check($env['DB_PASSWORD']===' space#pass=word ' && $env['SINGLE']==='a=b#c' && $env['EMPTY']==='', 'dotenv quotes, spaces, hash, equals, empty');
 check(invalid(fn()=>finiteNumber('INF','water')) && invalid(fn()=>finiteNumber(NAN,'water')), 'non-finite sensor readings rejected');
 $ranges=validateRanges([['min_level'=>null,'max_level'=>19],['min_level'=>20,'max_level'=>39],['min_level'=>40,'max_level'=>null]]);
@@ -60,7 +63,7 @@ try {
     putenv('ADMIN_EMAIL=integration@example.test');
     putenv('ADMIN_PASSWORD=IntegrationPassword123!');
     putenv('APP_URL=http://127.0.0.1:18765');
-    $input=['device_id'=>'ESP32-TEST','alarm_threshold'=>'20','hours'=>'0','minutes'=>'1','seconds'=>'0','ranges'=>$ranges];
+    $input=['station_name'=>'Pos Pantau Uji','device_id'=>'ESP32-TEST','alarm_threshold'=>'20','hours'=>'0','minutes'=>'1','seconds'=>'0','ranges'=>$ranges];
     $id=saveDevice($input);
     check($id>0,'schema import and create device');
     $pdo->exec('RENAME TABLE device_alert_ranges TO device_siaga_ranges');
@@ -114,7 +117,7 @@ try {
     [$code,$html]=request('/firmwares.php');preg_match('/name="csrf" value="([a-f0-9]+)"/',$html,$match);$token=$match[1]??'';
     check($token!=='','CSRF token provided');
     [$code,$html]=request('/device-edit.php');preg_match('/name="csrf" value="([a-f0-9]+)"/',$html,$deviceToken);
-    $deviceForm=['csrf'=>$deviceToken[1],'device_id'=>'ESP32-FORM','alarm_threshold'=>20,'hours'=>0,'minutes'=>0,'seconds'=>30,'ranges'=>$ranges];
+    $deviceForm=['csrf'=>$deviceToken[1],'device_id'=>'ESP32-FORM','station_name'=>'Pos Pantau Form','alarm_threshold'=>20,'hours'=>0,'minutes'=>0,'seconds'=>30,'ranges'=>$ranges];
     check(request('/device-edit.php','POST',http_build_query($deviceForm),false)[0]===302,'device created through HTTP form');
     $locationForm=$deviceForm;$locationForm['device_id']='ESP32-MAP';$locationForm['coordinates']='-7.566712, 110.833458';
     $logsBeforeLocation=(int)query('SELECT COUNT(*) FROM sensor_logs')->fetchColumn();

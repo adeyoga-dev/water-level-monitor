@@ -36,8 +36,17 @@ foreach (explode(';', $schema) as $statement) {
 }
 
 $ranges = [['min_level' => null, 'max_level' => 19], ['min_level' => 20, 'max_level' => 39], ['min_level' => 40, 'max_level' => null]];
+$pdo->exec('ALTER TABLE devices DROP COLUMN station_name');
+$pdo->exec("INSERT INTO devices(device_id,alarm_threshold,created_at,updated_at) VALUES('STATION-MIGRATION',20,UTC_TIMESTAMP(),UTC_TIMESTAMP())");
+$legacyStation = $pdo->query("SELECT * FROM devices WHERE device_id='STATION-MIGRATION'")->fetch(PDO::FETCH_ASSOC);
+$pdo->exec(file_get_contents(dirname(__DIR__, 2) . '/database/migrations/004_station_name.sql'));
+$migratedStation = $pdo->query("SELECT * FROM devices WHERE device_id='STATION-MIGRATION'")->fetch(PDO::FETCH_ASSOC);
+if ($migratedStation['station_name'] !== null || array_diff_key($migratedStation, ['station_name'=>true]) !== $legacyStation) throw new RuntimeException('Station migration changed existing data.');
+$pdo->exec("DELETE FROM devices WHERE device_id='STATION-MIGRATION'");
+$pdo->exec('ALTER TABLE devices AUTO_INCREMENT=1');
 foreach (['ESP32-001', 'ESP32-002', 'ESP32-EMPTY', 'ESP32-SINGLE', 'ESP32-PERIOD'] as $identifier) {
-    saveDevice(['device_id' => $identifier, 'alarm_threshold' => 30, 'hours' => 0, 'minutes' => 1, 'seconds' => 0, 'buzzer_status' => '1', 'ranges' => $ranges]);
+    $stationId = saveDevice(['station_name' => 'Pos Pantau ' . $identifier, 'device_id' => $identifier, 'alarm_threshold' => 30, 'hours' => 0, 'minutes' => 1, 'seconds' => 0, 'buzzer_status' => '1', 'ranges' => $ranges]);
+    if (query('SELECT station_name FROM devices WHERE id=?', [$stationId])->fetchColumn() !== 'Pos Pantau ' . $identifier) throw new RuntimeException('Station name was not persisted.');
 }
 query('UPDATE devices SET latitude=?,longitude=? WHERE device_id=?', [-7.566712, 110.833458, 'ESP32-001']);
 query('UPDATE devices SET latitude=?,longitude=? WHERE device_id=?', [0, 0, 'ESP32-002']);
@@ -62,6 +71,12 @@ while ($cursor->format('Y') < '2027') {
     $cursor = $cursor->modify('+1 day');
 }
 db()->commit();
+$renamedStation = query("SELECT * FROM devices WHERE device_id='ESP32-SINGLE'")->fetch();
+$beforeRenameLogs = query('SELECT * FROM sensor_logs ORDER BY id')->fetchAll();
+$renameInput = ['id'=>$renamedStation['id'], 'device_id'=>$renamedStation['device_id'], 'station_name'=>'Pos Pantau Uji – Sungai α', 'alarm_threshold'=>30, 'hours'=>0, 'minutes'=>1, 'seconds'=>0, 'buzzer_status'=>'1', 'ranges'=>$ranges];
+saveDevice($renameInput);
+$afterRename = query('SELECT * FROM devices WHERE id=?', [$renamedStation['id']])->fetch();
+if ($afterRename['station_name'] !== $renameInput['station_name'] || $afterRename['device_id'] !== $renamedStation['device_id'] || query('SELECT * FROM sensor_logs ORDER BY id')->fetchAll() !== $beforeRenameLogs) throw new RuntimeException('Renaming a station changed its identity or history.');
 // Exercise the historical migration and cleanup only on this verified temporary server.
 $businessTables = ['devices', 'device_alert_ranges', 'sensor_logs', 'firmwares'];
 $beforeCleanup = [];

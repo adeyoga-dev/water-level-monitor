@@ -82,7 +82,7 @@
     popup.className = "flow-map-popup";
     const title = document.createElement("h3");
     title.className = "h6";
-    title.textContent = device.device_id;
+    title.textContent = device.station_name;
     const badge = document.createElement("span");
     badge.className = `badge badge-${device.online ? "success" : "secondary"}`;
     badge.textContent = device.online ? "Terhubung" : "Terputus";
@@ -128,8 +128,8 @@
     if (container.dataset.viewer !== "true") popup.append(seen);
     popup.append(actions);
     const marker = L.marker([device.latitude, device.longitude], {
-      title: `${device.device_id} · ${device.online ? "Terhubung" : "Terputus"}`,
-      alt: device.device_id,
+      title: `${device.station_name} · ${device.online ? "Terhubung" : "Terputus"}`,
+      alt: device.station_name,
       icon: L.divIcon({
         className: `flow-map-marker ${device.online ? "is-online" : "is-offline"}`,
         html: '<span class="flow-map-pin" aria-hidden="true"></span>',

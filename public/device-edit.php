@@ -46,6 +46,10 @@ pageTitle('PENGATURAN PERANGKAT', $id ? 'Ubah perangkat' : 'Tambah perangkat', '
                 </div>
                 <div class="card-body">
                     <div class="form-group">
+                        <label for="station-name">Nama Pos Pantau</label>
+                        <input class="form-control" id="station-name" name="station_name" required maxlength="150" value="<?= h(is_string($values['station_name'] ?? '') ? ($values['station_name'] ?? '') : '') ?>" placeholder="Contoh: Pos Pantau Jurug">
+                    </div>
+                    <div class="form-group">
                         <label for="device-id">ID perangkat</label>
                         <input class="form-control" id="device-id" name="device_id" maxlength="64" pattern="[A-Za-z0-9_-]+" required value="<?= h($values['device_id'] ?? '') ?>" <?= $id ? 'readonly' : '' ?> placeholder="ESP32-001" aria-describedby="device-id-help">
                         <small class="form-text text-muted" id="device-id-help">Harus sama persis dengan ID pada firmware ESP32. Tidak dapat diubah setelah dibuat.</small>

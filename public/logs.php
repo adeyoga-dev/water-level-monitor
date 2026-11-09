@@ -35,7 +35,8 @@ $pages = max(1, (int)ceil($count / 25));
 $page = min($pages, max(1, (int)($_GET['page'] ?? 1)));
 $offset = ($page - 1) * 25;
 $logs = query('SELECT * FROM sensor_logs' . $where . ' ORDER BY created_at DESC,id DESC LIMIT 25 OFFSET ' . $offset, $params)->fetchAll();
-$devices = query('SELECT device_id FROM devices ORDER BY device_id')->fetchAll();
+$devices = query('SELECT device_id,station_name FROM devices ORDER BY station_name,device_id')->fetchAll();
+$stationNames = array_column($devices, 'station_name', 'device_id');
 $link = fn($p) => '?' . http_build_query(['device_id' => $device, 'alarm_status' => $status, 'from' => $from, 'to' => $to, 'page' => $p]);
 pageStart('Catatan sensor', 'logs');
 // pageTitle('RIWAYAT SENSOR', 'Catatan sensor', 'Lihat riwayat tinggi air dan klasifikasi siaga saat pembacaan diterima.');
@@ -44,10 +45,10 @@ pageStart('Catatan sensor', 'logs');
 <form class="card card-body mb-4" method="get">
     <div class="form-row align-items-end">
         <div class="form-group col-sm-6 col-xl-3">
-            <label for="filter-device">Perangkat</label>
+            <label for="filter-device">Pos Pantau</label>
             <select class="form-control" id="filter-device" name="device_id">
-                <option value="">Semua perangkat</option>
-                <?php foreach ($devices as $d): ?><option <?= $device === $d['device_id'] ? 'selected' : '' ?> value="<?= h($d['device_id']) ?>"><?= h($d['device_id']) ?></option><?php endforeach ?>
+                <option value="">Semua pos pantau</option>
+                <?php foreach ($devices as $d): ?><option <?= $device === $d['device_id'] ? 'selected' : '' ?> value="<?= h($d['device_id']) ?>"><?= h($d['station_name'] ?? 'Pos pantau belum dinamai') ?></option><?php endforeach ?>
             </select>
         </div>
         <div class="form-group col-sm-6 col-xl-3">
@@ -77,7 +78,7 @@ pageStart('Catatan sensor', 'logs');
             <thead class="thead-light text-nowrap">
                 <tr>
                     <th scope="col">ID catatan</th>
-                    <th scope="col">Perangkat</th>
+                    <th scope="col">Pos Pantau</th>
                     <th scope="col">Tinggi air</th>
                     <th scope="col">Status siaga</th>
                     <th scope="col">Waktu (<?= h(config('APP_TIMEZONE', 'Asia/Jakarta')) ?>)</th>
@@ -85,7 +86,7 @@ pageStart('Catatan sensor', 'logs');
             </thead>
             <tbody><?php foreach ($logs as $log): ?><tr>
                         <td class="text-muted">#<?= h($log['id']) ?></td>
-                        <td class="text-nowrap"><strong><?= h($log['device_id']) ?></strong></td>
+                        <td class="text-nowrap"><strong><?= h($stationNames[$log['device_id']] ?? 'Pos pantau belum dinamai') ?></strong></td>
                         <td class="text-nowrap"><strong><?= h(number_format((float)$log['water_level'], 2)) ?></strong> cm</td>
                         <td><span class="badge badge-<?= [0 => 'success', 1 => 'warning', 2 => 'danger'][$log['alarm_status'] ?? -1] ?? 'secondary' ?>"><?= h(uiText(alertLabel($log['alarm_status']))) ?></span></td>
                         <td class="text-nowrap"><?= h(uiText(displayTime($log['created_at']))) ?></td>

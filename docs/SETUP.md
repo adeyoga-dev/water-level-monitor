@@ -136,6 +136,10 @@ Batas aplikasi tetap 16 MB meskipun limit PHP lebih tinggi. File disimpan sebaga
 
 ## Menambahkan perangkat
 
+Nama Pos Pantau adalah identitas utama pada dashboard Admin/viewer, peta dan popup, daftar perangkat, filter/catatan sensor, serta panel riwayat. Isian wajib, maksimal 150 karakter Unicode tanpa karakter kontrol, dapat diubah dan tidak harus unik. Device ID tetap identitas teknis permanen untuk ESP32, filter URL, serta relasi logs; mengganti nama tidak mengubah ID atau logs lama. Catatan sensor menampilkan nama pos saat ini, bukan salinan nama historis.
+
+Instalasi baru sudah memiliki `devices.station_name` pada `schema.sql`. Database lama membutuhkan `database/migrations/004_station_name.sql`: preview `php scripts/migrate-station-name.php`, lalu setelah persetujuan eksplisit jalankan dengan `--apply`. Kolom nullable untuk mempertahankan data lama tanpa mengarang nama; tampilan memakai “Pos pantau belum dinamai” sampai Admin mengisinya melalui Ubah perangkat. Migrasi database aplikasi belum dijalankan oleh pembaruan kode ini.
+
 1. Buka **Devices â†’ Add device**.
 2. Isi ID unik yang membedakan huruf besar/kecil, misalnya `ESP32-001`: 1â€“64 huruf ASCII, angka, `-`, atau `_`.
 3. Atur threshold alarm dalam cm, interval pengiriman, dan sakelar buzzer.

@@ -27,6 +27,9 @@ function saveDevice(array $input): int
 {
     $id = filter_var($input['id'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
     if ($id === false) fail('Invalid ID.');
+    $stationName = $input['station_name'] ?? null;
+    if (!is_string($stationName) || !preg_match('/\A[^\p{C}]{1,150}\z/u', trim($stationName))) fail('Nama Pos Pantau wajib diisi, maksimal 150 karakter tanpa karakter kontrol.');
+    $stationName = trim($stationName);
     $identifier = $input['device_id'] ?? '';
     if (!is_string($identifier) || !preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $identifier)) fail('Device ID must contain 1–64 letters, numbers, hyphens, or underscores.');
     $threshold = finiteNumber($input['alarm_threshold'] ?? null, 'Threshold');
@@ -52,11 +55,11 @@ function saveDevice(array $input): int
             if (!$existing) fail('Device not found.');
             if ($existing['device_id'] !== $identifier) fail('Device ID cannot be changed.');
             $coordinates ??= [$existing['latitude'], $existing['longitude']];
-            query('UPDATE devices SET update_interval=?,alarm_threshold=?,buzzer_status=?,latitude=?,longitude=?,updated_at=? WHERE id=?', [$interval, $threshold, $enabled, $coordinates[0], $coordinates[1], $time, $id]);
+            query('UPDATE devices SET station_name=?,update_interval=?,alarm_threshold=?,buzzer_status=?,latitude=?,longitude=?,updated_at=? WHERE id=?', [$stationName, $interval, $threshold, $enabled, $coordinates[0], $coordinates[1], $time, $id]);
             query('DELETE FROM device_alert_ranges WHERE device_id=?', [$id]);
         } else {
             $coordinates ??= [null, null];
-            query('INSERT INTO devices(device_id,update_interval,alarm_threshold,buzzer_status,latitude,longitude,current_firmware,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)', [$identifier, $interval, $threshold, $enabled, $coordinates[0], $coordinates[1], $firmware ? $firmware['version'] : null, $time, $time]);
+            query('INSERT INTO devices(device_id,station_name,update_interval,alarm_threshold,buzzer_status,latitude,longitude,current_firmware,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)', [$identifier, $stationName, $interval, $threshold, $enabled, $coordinates[0], $coordinates[1], $firmware ? $firmware['version'] : null, $time, $time]);
             $id = (int) db()->lastInsertId();
         }
         foreach ($ranges as $range) query('INSERT INTO device_alert_ranges(device_id,alarm_status,min_level,max_level) VALUES(?,?,?,?)', [$id, $range['alarm_status'], $range['min_level'], $range['max_level']]);
