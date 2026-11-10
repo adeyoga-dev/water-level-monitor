@@ -5,15 +5,16 @@ let siagaActive = new Set();
 let siagaVisible = new Set();
 function syncSiagaAlert() {
   if (!siagaAlert) return;
-  const alertCards = [...document.querySelectorAll('#water-level-panels [data-alert-status="1"], #water-level-panels [data-alert-status="2"]')];
+  const alertCards = [...document.querySelectorAll('#water-level-panels [data-alert-status="0"], #water-level-panels [data-alert-status="1"], #water-level-panels [data-alert-status="2"]')];
   const key = (card) => `${card.dataset.alertDevice}:${card.dataset.alertStatus}`;
   siagaActive = new Set(alertCards.map(key));
-  const level = alertCards.some((card) => card.dataset.alertStatus === "2") ? "2" : "1";
+  const level = alertCards.some((card) => card.dataset.alertStatus === "2") ? "2" : (alertCards.some((card) => card.dataset.alertStatus === "1") ? "1" : "0");
   const cards = alertCards.filter((card) => card.dataset.alertStatus === level);
   siagaVisible = new Set(cards.map(key));
-  siagaAlert.dataset.severity = level === "2" ? "danger" : "warning";
-  document.querySelector("#siaga-alert-title").textContent = level === "2" ? "BAHAYA" : "PERINGATAN";
-  document.querySelector("#siaga-alert-description").textContent = level === "2" ? "SIAGA 3" : "SIAGA 2";
+  siagaAlert.dataset.severity = ["info", "warning", "danger"][Number(level)];
+  document.querySelector("#siaga-alert-title").textContent = ["INFO", "PERINGATAN", "BAHAYA"][Number(level)];
+  document.querySelector("#siaga-alert-description").textContent = `SIAGA ${Number(level) + 1}`;
+  siagaAlert.querySelector(".flow-alert-symbol").className = `fa-solid ${level === "0" ? "fa-circle-info" : "fa-triangle-exclamation"} flow-alert-symbol`;
   for (const id of siagaDismissed) {
     if (!siagaActive.has(id)) siagaDismissed.delete(id);
   }

@@ -585,6 +585,10 @@ legend {
   background: var(--accent-yellow);
   --alert-ink: var(--ink);
 }
+.flow-alert-dialog[data-severity="info"] {
+  background: var(--accent-green);
+  --alert-ink: var(--ink);
+}
 .flow-alert-dialog::backdrop {
   background: var(--alert-backdrop);
 }
