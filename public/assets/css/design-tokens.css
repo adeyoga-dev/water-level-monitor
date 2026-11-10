@@ -48,6 +48,11 @@
   --border-width: 1px;
   --focus-width: 2px;
   --touch-target: 44px;
+  --auth-card-width: 440px;
+  --auth-canvas: color-mix(in srgb, var(--accent-blue) 5%, var(--canvas));
+  --auth-river-soft: color-mix(in srgb, var(--accent-blue) 10%, var(--canvas));
+  --auth-river: color-mix(in srgb, var(--accent-blue) 18%, var(--canvas));
+  --auth-line: color-mix(in srgb, var(--accent-blue) 22%, var(--canvas));
   --alert-dialog-width: 960px;
   --alert-symbol-size: 96px;
   --alert-backdrop: rgba(0, 0, 0, 0.45);

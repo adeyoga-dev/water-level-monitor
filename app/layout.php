@@ -50,10 +50,13 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                 <div class="<?= $viewer ? 'col-12' : 'col-md-9 col-lg-10' ?> d-flex flex-column px-0">
                     <?php if ($viewer): ?>
                         <header class="flow-viewer-header border-bottom">
-                            <a class="flow-logo h3 d-flex align-items-center text-decoration-none mb-0" href="/viewer.php" aria-label="Flow Dasbor">
-                                <img class="flow-brand-mark" src="/assets/images/flow-mark-blue.svg" width="36" height="36" alt="" aria-hidden="true">
-                                <span>SIPATA</span>
-                            </a>
+                            <div class="flow-viewer-brand">
+                                <a class="flow-logo h3 d-flex align-items-center text-decoration-none mb-0" href="/viewer.php" aria-label="SIPATA Dasbor">
+                                    <img class="flow-brand-mark" src="/assets/images/flow-mark-blue.svg" width="36" height="36" alt="" aria-hidden="true">
+                                    <span>SIPATA</span>
+                                </a>
+                                <p class="small text-muted mb-0">Sistem Pemantauan Tinggi Air</p>
+                            </div>
                             <nav class="flow-viewer-nav" aria-label="Navigasi pengunjung">
                                 <?php foreach ($navigation as $key => $item): ?>
                                     <a class="btn <?= $active === $key ? 'btn-primary' : 'btn-outline-secondary' ?>" href="<?= $item[0] ?>" <?= $active === $key ? 'aria-current="page"' : '' ?>><?= $item[1] ?></a>
