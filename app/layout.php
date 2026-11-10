@@ -27,7 +27,8 @@ function pageStart(string $title, string $active, bool $viewer = false): void
         <link rel="stylesheet" href="/assets/css/theme.css">
     </head>
 
-    <body class="bg-light">
+    <body class="flow-illustrated-body">
+        <?php require __DIR__ . '/background-view.php'; ?>
         <div class="container-fluid">
             <div class="row min-vh-100">
                 <?php if (!$viewer): ?>
