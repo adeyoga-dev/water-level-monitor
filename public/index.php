@@ -59,5 +59,14 @@ pageStart('Dasbor', 'dashboard', $viewer);
 </div>
 <p class="sr-only" id="refresh-status" role="status" aria-live="polite">Diperbarui setiap 5 detik</p>
 <div class="row" id="water-level-panels" data-endpoint="<?= $viewer ? '/api/viewer-dashboard.php' : '/api/dashboard.php' ?>" aria-busy="false"><?php waterLevelPanels($devices, false, $viewer) ?></div>
+<dialog class="flow-alert-dialog" id="siaga-alert" role="alertdialog" aria-labelledby="siaga-alert-title" aria-describedby="siaga-alert-description">
+    <button class="flow-alert-close" id="siaga-alert-close" type="button" aria-label="Tutup peringatan" title="Tutup" autofocus><i class="fa-solid fa-xmark" data-button-icon aria-hidden="true"></i><span class="sr-only">Tutup</span></button>
+    <div class="flow-alert-content">
+        <i class="fa-solid fa-triangle-exclamation flow-alert-symbol" aria-hidden="true"></i>
+        <h2 class="flow-alert-title" id="siaga-alert-title">PERINGATAN</h2>
+        <p class="flow-alert-title" id="siaga-alert-description">SIAGA 3</p>
+        <ul id="siaga-alert-devices"></ul>
+    </div>
+</dialog>
 <script src="/assets/dashboard.js" defer></script>
 <?php pageEnd(); ?>

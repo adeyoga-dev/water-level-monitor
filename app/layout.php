@@ -224,7 +224,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                         }
     ?>
         <div class="<?= count($devices) === 1 ? 'col-12' : 'col-12 col-lg-6' ?> mb-4">
-            <article class="flow-device-card card h-100">
+            <article class="flow-device-card card h-100" data-alert-device="<?= (int) $device['id'] ?>" data-alert-status="<?= $device['alert_status'] === null ? '' : (int) $device['alert_status'] ?>">
                 <div class="card-header bg-white d-flex justify-content-between align-items-start">
                     <div class="mr-3 text-break">
                         <h2 class="h4 mb-1"><?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></h2>

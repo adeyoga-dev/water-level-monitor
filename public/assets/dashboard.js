@@ -1,4 +1,54 @@
 let dashboardAccessExpired = false;
+const siagaAlert = document.querySelector("#siaga-alert");
+const siagaDismissed = new Set();
+let siagaActive = new Set();
+let siagaVisible = new Set();
+function syncSiagaAlert() {
+  if (!siagaAlert) return;
+  const alertCards = [...document.querySelectorAll('#water-level-panels [data-alert-status="1"], #water-level-panels [data-alert-status="2"]')];
+  const key = (card) => `${card.dataset.alertDevice}:${card.dataset.alertStatus}`;
+  siagaActive = new Set(alertCards.map(key));
+  const level = alertCards.some((card) => card.dataset.alertStatus === "2") ? "2" : "1";
+  const cards = alertCards.filter((card) => card.dataset.alertStatus === level);
+  siagaVisible = new Set(cards.map(key));
+  siagaAlert.dataset.severity = level === "2" ? "danger" : "warning";
+  document.querySelector("#siaga-alert-title").textContent = level === "2" ? "BAHAYA" : "PERINGATAN";
+  document.querySelector("#siaga-alert-description").textContent = level === "2" ? "SIAGA 3" : "SIAGA 2";
+  for (const id of siagaDismissed) {
+    if (!siagaActive.has(id)) siagaDismissed.delete(id);
+  }
+  const list = document.querySelector("#siaga-alert-devices");
+  list.replaceChildren();
+  for (const card of cards) {
+    const item = document.createElement("li");
+    const name = card.querySelector("h2").textContent.trim();
+    item.textContent = /^pos pantau\b/i.test(name) ? name : `Pos Pantau ${name}`;
+    list.append(item);
+  }
+  if (!cards.length || dashboardAccessExpired || ![...siagaVisible].some((id) => !siagaDismissed.has(id))) {
+    if (siagaAlert.open) siagaAlert.close();
+  } else if (!siagaAlert.open) {
+    siagaAlert.showModal();
+  }
+}
+function dismissSiagaAlert() {
+  for (const id of siagaVisible) siagaDismissed.add(id);
+  siagaAlert.close();
+}
+if (siagaAlert) {
+  document.querySelector("#siaga-alert-close").addEventListener("click", dismissSiagaAlert);
+  siagaAlert.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    dismissSiagaAlert();
+  });
+  syncSiagaAlert();
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) {
+      siagaDismissed.clear();
+      syncSiagaAlert();
+    }
+  });
+}
 async function refreshDashboard() {
   const status = document.querySelector("#refresh-status");
   const panels = document.querySelector("#water-level-panels");
@@ -16,6 +66,7 @@ async function refreshDashboard() {
     );
     if (response.status === 401 || response.status === 403) {
       dashboardAccessExpired = true;
+      if (siagaAlert?.open) siagaAlert.close();
       status.textContent = "Sesi berakhir. Masuk kembali untuk melanjutkan.";
       const link = document.createElement("a");
       link.href = "/login.php";
@@ -27,6 +78,7 @@ async function refreshDashboard() {
     const data = await response.json();
     if (data.status !== "success") throw new Error("Invalid response");
     panels.innerHTML = data.html;
+    syncSiagaAlert();
     document.querySelector("#stat-total").textContent = data.total;
     document.querySelector("#stat-online").textContent = data.online;
     document.querySelector("#stat-offline").textContent =

@@ -567,6 +567,69 @@ legend {
   z-index: 0;
   font-family: var(--font-sans);
 }
+.flow-alert-dialog {
+  width: calc(100% - var(--space-8));
+  max-width: var(--alert-dialog-width);
+  max-height: calc(100% - var(--space-8));
+  overflow-y: auto;
+  margin: auto;
+  padding: var(--space-0);
+  border: var(--space-0);
+  border-radius: var(--radius-md);
+  background: var(--accent-red);
+  --alert-ink: var(--canvas);
+  color: var(--alert-ink);
+  box-shadow: var(--shadow-feature);
+}
+.flow-alert-dialog[data-severity="warning"] {
+  background: var(--accent-yellow);
+  --alert-ink: var(--ink);
+}
+.flow-alert-dialog::backdrop {
+  background: var(--alert-backdrop);
+}
+.flow-alert-content {
+  display: grid;
+  gap: var(--space-4);
+  margin: var(--space-12) var(--space-0);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.flow-alert-symbol {
+  font-size: var(--alert-symbol-size);
+}
+.flow-alert-dialog .flow-alert-title,
+.flow-alert-dialog #siaga-alert-devices {
+  margin: var(--space-0);
+  padding: var(--space-0);
+  color: var(--alert-ink);
+  font-size: clamp(var(--font-card), 5vw, var(--font-level));
+  font-weight: var(--weight-semibold);
+  line-height: 1.2;
+}
+.flow-alert-dialog #siaga-alert-devices {
+  display: grid;
+  gap: var(--space-3);
+  list-style: none;
+  text-transform: uppercase;
+}
+.flow-alert-close {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: var(--touch-target);
+  height: var(--touch-target);
+  padding: var(--space-0);
+  border: var(--space-0);
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: var(--canvas);
+  font-size: var(--font-card);
+}
+.flow-alert-close:focus-visible {
+  outline: var(--focus-width) solid var(--canvas);
+  outline-offset: var(--focus-width);
+}
 .flow-button-icon {
   margin-right: var(--space-2);
   pointer-events: none;

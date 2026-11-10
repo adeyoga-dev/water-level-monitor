@@ -48,6 +48,9 @@
   --border-width: 1px;
   --focus-width: 2px;
   --touch-target: 44px;
+  --alert-dialog-width: 960px;
+  --alert-symbol-size: 96px;
+  --alert-backdrop: rgba(0, 0, 0, 0.45);
   --icon-size: 48px;
   --brand-mark-size: 36px;
   --brand-mark-footer-size: 24px;

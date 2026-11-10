@@ -1,6 +1,7 @@
 (() => {
   const selector = "button, a.btn, .pagination .page-link";
   const icons = [
+    ["Tutup", "xmark"],
     ["Dasbor", "gauge-high"],
     ["Peta", "map-location-dot"],
     ["Masuk", "right-to-bracket"],
