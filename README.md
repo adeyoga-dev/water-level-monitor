@@ -48,6 +48,12 @@ Pengujian integrasi memerlukan `pdo_mysql`, `curl`, izin membuat/menghapus datab
 - `current_firmware` adalah versi target; `reported_firmware` adalah versi terpasang yang dilaporkan ESP32.
 - Tampilan, pesan API, dan penamaan kode menggunakan bahasa Inggris. Dokumentasi menggunakan bahasa Indonesia; tiga label Siaga tetap bahasa Indonesia.
 
+### Tampilan perangkat terputus
+
+Tinggi air terkini pada panel Admin (termasuk detail perangkat), viewer, daftar perangkat, dan peta ditampilkan **0 cm** ketika perangkat terputus atau telemetry melewati batas `max(3 × update_interval, 30)` detik. Viewer tetap menampilkan indikator **Terhubung**. Nilai ini hanya untuk tampilan; pembacaan terakhir di database dan grafik/log historis tidak diubah. Label Siaga tampilan dihitung dari tinggi yang ditampilkan menggunakan rentang master perangkat; jika 0 cm tidak masuk rentang mana pun, labelnya Tidak terklasifikasi. Setelah telemetry kembali diterima, tampilan mengikuti pembacaan terbaru. Pemeriksaan timeout viewer tidak memerlukan kunjungan Admin atau perubahan database.
+
+Verifikasi tanpa database: `php tests/offline-display.php`. Terakhir diperbarui: 18 November 2026.
+
 ## Database dari versi sebelumnya
 
 Jika sudah mengimpor schema lama yang memiliki tabel `device_siaga_ranges`, pilih database tersebut dan jalankan [001_english_alert_names.sql](database/migrations/001_english_alert_names.sql) **sekali** sebelum menggunakan versi ini. Query mengganti nama tabel rentang dan indeks unik tanpa menghapus data. Instalasi baru cukup memakai `schema.sql` terbaru.

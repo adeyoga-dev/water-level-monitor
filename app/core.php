@@ -125,6 +125,15 @@ function markOffline(): int
 {
     return query('UPDATE devices SET device_status=0 WHERE device_status=1 AND (last_seen_at IS NULL OR TIMESTAMPDIFF(SECOND,last_seen_at,UTC_TIMESTAMP()) > GREATEST(3 * update_interval,30))')->rowCount();
 }
+function displayWaterLevel(array $device): ?float
+{
+    // Viewer requests must recognize stale telemetry without updating stored readings/status.
+    $lastSeen = $device['last_seen_at'] === null ? null : new DateTimeImmutable($device['last_seen_at'], new DateTimeZone('UTC'));
+    if (!(bool) $device['device_status'] || $lastSeen === null || time() - $lastSeen->getTimestamp() > max(3 * (int) $device['update_interval'], 30)) {
+        return 0.0;
+    }
+    return $device['water_level'] === null ? null : (float) $device['water_level'];
+}
 function latestFirmware(): array|false
 {
     return query('SELECT * FROM firmwares ORDER BY id DESC LIMIT 1')->fetch();

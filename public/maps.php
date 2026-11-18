@@ -9,6 +9,7 @@ foreach ($devices as $device) {
     if (($device['latitude'] ?? null) === null || ($device['longitude'] ?? null) === null) {
         continue;
     }
+    $level = displayWaterLevel($device);
     $mapDevices[] = [
         'id' => (int) $device['id'],
         'device_id' => $device['device_id'],
@@ -16,8 +17,8 @@ foreach ($devices as $device) {
         'latitude' => (float) $device['latitude'],
         'longitude' => (float) $device['longitude'],
         'online' => $viewer || (bool) $device['device_status'],
-        'level' => $device['water_level'] === null ? null : (float) $device['water_level'],
-        'alert' => $device['water_level'] === null ? 'Belum ada pembacaan' : uiText(alertLabel($device['alert_status'])),
+        'level' => $level,
+        'alert' => $level === null ? 'Belum ada pembacaan' : uiText(alertLabel(classify($level, $device['alert_ranges']))),
         'last_seen' => uiText($device['last_seen_display']),
     ];
 }

@@ -134,11 +134,15 @@ function pageStart(string $title, string $active, bool $viewer = false): void
             </thead>
             <tbody id="device-rows">
                 <?php foreach ($devices as $device): ?>
+                    <?php
+                    $level = displayWaterLevel($device);
+                    $alertStatus = $level === null ? null : classify($level, $device['alert_ranges'] ?? []);
+                    ?>
                     <tr>
                         <td class="text-nowrap"><strong><?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></strong><small class="d-block text-muted">ID: <?= h($device['device_id']) ?></small></td>
                         <td><span class="badge badge-<?= $device['device_status'] ? 'success' : 'danger' ?>"><?= $device['device_status'] ? 'Terhubung' : 'Terputus' ?></span></td>
-                        <td class="text-nowrap"><strong><?= $device['water_level'] === null ? '—' : h(number_format((float)$device['water_level'], 2)) ?></strong> <span class="text-muted">cm</span></td>
-                        <td><span class="badge badge-<?= [0 => 'success', 1 => 'warning', 2 => 'danger'][$device['alert_status'] ?? -1] ?? 'secondary' ?>"><?= h($device['water_level'] === null ? 'Belum ada pembacaan' : uiText(alertLabel($device['alert_status']))) ?></span></td>
+                        <td class="text-nowrap"><strong><?= $level === null ? '—' : h(number_format($level, 2)) ?></strong> <span class="text-muted">cm</span></td>
+                        <td><span class="badge badge-<?= [0 => 'success', 1 => 'warning', 2 => 'danger'][$alertStatus ?? -1] ?? 'secondary' ?>"><?= h($level === null ? 'Belum ada pembacaan' : uiText(alertLabel($alertStatus))) ?></span></td>
                         <td class="text-nowrap"><?= $device['buzzer_status'] ? 'Aktif' : 'Nonaktif' ?><small class="d-block text-muted">Ambang batas &gt; <?= h($device['alarm_threshold']) ?> cm</small></td>
                         <td class="text-nowrap"><?= h($device['update_interval']) ?> detik</td>
                         <td class="text-nowrap"><?= h($device['reported_firmware'] ?? '—') ?><small class="d-block text-muted">Target <?= h($device['current_firmware'] ?? '—') ?></small></td>
@@ -174,7 +178,8 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                         return;
                     }
                     foreach ($devices as $device) {
-                        $level = $device['water_level'] === null ? null : (float) $device['water_level'];
+                        $level = displayWaterLevel($device);
+                        $alertStatus = $level === null ? null : classify($level, $device['alert_ranges'] ?? []);
                         $ranges = $device['alert_ranges'] ?? [];
                         foreach ($ranges as &$range) {
                             if ((int) $range['alarm_status'] === 2) {
@@ -183,7 +188,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                         }
                         unset($range);
                         $colors = [0 => 'success', 1 => 'warning', 2 => 'danger'];
-                        $statusColor = $colors[$device['alert_status'] ?? -1] ?? 'secondary';
+                        $statusColor = $colors[$alertStatus ?? -1] ?? 'secondary';
                         $bounds = [0.0, 1.0, $level ?? 0.0];
                         foreach ($ranges as $range) {
                             foreach (['min_level', 'max_level'] as $bound) {
@@ -228,7 +233,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                         }
     ?>
         <div class="<?= count($devices) === 1 ? 'col-12' : 'col-12 col-lg-6' ?> mb-4">
-            <article class="flow-device-card card h-100" data-alert-device="<?= (int) $device['id'] ?>" data-alert-status="<?= $device['alert_status'] === null ? '' : (int) $device['alert_status'] ?>">
+            <article class="flow-device-card card h-100" data-alert-device="<?= (int) $device['id'] ?>" data-alert-status="<?= $alertStatus === null ? '' : $alertStatus ?>">
                 <div class="card-header bg-white d-flex justify-content-between align-items-start">
                     <div class="mr-3 text-break">
                         <h2 class="h4 mb-1"><?= h($device['station_name'] ?? 'Pos pantau belum dinamai') ?></h2>
@@ -239,7 +244,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                 <div class="card-body">
                     <div class="row mb-3">
                         <div class="col-sm-7 mb-2 mb-sm-0">
-                            <span class="badge badge-<?= $statusColor ?>"><?= h($level === null ? 'Belum ada pembacaan' : uiText(alertLabel($device['alert_status']))) ?></span>
+                            <span class="badge badge-<?= $statusColor ?>"><?= h($level === null ? 'Belum ada pembacaan' : uiText(alertLabel($alertStatus))) ?></span>
                             <p class="flow-level mb-0 mt-2 text-break"><strong class="h2"><?= $level === null ? '—' : h(number_format($level, 1)) ?></strong> <span class="text-muted">cm</span></p>
                             <small class="d-block text-muted">Tinggi air dari titik acuan nol</small>
                             <small class="text-muted">Skala tampilan: <?= h(number_format($minimum, 1)) ?>–<?= h(number_format($maximum, 1)) ?> cm</small>
@@ -247,7 +252,7 @@ function pageStart(string $title, string $active, bool $viewer = false): void
                         <?php if (!$viewer): ?><div class="col-sm-5 text-sm-right">
                                 <small class="text-muted d-block">Pengukuran terakhir</small>
                                 <span><?= h(uiText($device['last_seen_display'])) ?></span>
-                                <?php if (!$viewer && !$device['device_status'] && $level !== null): ?><small class="d-block text-muted">Pembacaan terakhir · perangkat terputus</small><?php endif ?>
+                                <?php if (!$viewer && !$device['device_status']): ?><small class="d-block text-muted">Perangkat terputus · tinggi air ditampilkan 0 cm</small><?php endif ?>
                             </div><?php endif ?>
                     </div>
                     <?php foreach (count($devices) === 1 && !$detailView ? [1000 => 'd-none d-md-block', 420 => 'd-md-none'] : [420 => 'd-block'] as $width => $visibility): ?>
